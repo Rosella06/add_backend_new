@@ -34,6 +34,8 @@ export async function setupRabbitMQConsumers () {
     const mainQueueName = `orders_queue_${machineId}`
     const waitQueueName = `wait_queue_${machineId}`
 
+    await channel.prefetch(1)
+
     await channel.assertQueue(waitQueueName, {
       durable: true,
       messageTtl: RETRY_DELAY,

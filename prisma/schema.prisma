@@ -54,7 +54,7 @@ model Prescription {
 }
 
 model Orders {
-  id             String       @id @default(uuid())
+  id             String       @id @unique @default(uuid())
   orderItemName  String       @db.VarChar(200)
   quantity       Int
   unitCode       String       @db.VarChar(20)

@@ -1,13 +1,13 @@
 import { Socket } from 'net'
 import prisma from '../../config/prisma'
 
-function pad (num: number, size: number): string {
+function pad(num: number, size: number): string {
   let s = num.toString()
   while (s.length < size) s = '0' + s
   return s
 }
 
-async function getNextRunningNumber (machineId: string): Promise<number> {
+async function getNextRunningNumber(machineId: string): Promise<number> {
   return prisma.$transaction(async tx => {
     const machine = await tx.machines.findUnique({
       where: { id: machineId },
@@ -31,7 +31,7 @@ async function getNextRunningNumber (machineId: string): Promise<number> {
 }
 
 class PlcService {
-  private async createCommand (params: {
+  private async createCommand(params: {
     cabinet?: number
     row?: number
     column?: number
@@ -75,7 +75,7 @@ class PlcService {
     return commandString
   }
 
-  private async sendCommandWithRetry (
+  private async sendCommandWithRetry(
     socket: Socket,
     commandString: string,
     timeoutMs = 2500
@@ -122,7 +122,7 @@ class PlcService {
     throw new Error('sendCommandWithRetry logic reached an unexpected state.')
   }
 
-  public async dispenseDrug (
+  public async dispenseDrug(
     socket: Socket,
     order: {
       machineId: string
@@ -148,7 +148,7 @@ class PlcService {
       commandString,
       15000
     )
-    const responseCode = response.substring(19, 21)
+    const responseCode = response.substring(21, 23)
 
     if (responseCode !== '92') {
       throw new Error(
@@ -158,7 +158,7 @@ class PlcService {
     return true
   }
 
-  public async checkStatus (
+  public async checkStatus(
     socket: Socket,
     machineId: string,
     commandCode: 38 | 39 | 40
@@ -170,11 +170,11 @@ class PlcService {
     })
 
     const response = await this.sendCommandWithRetry(socket, commandString)
-    const responseCode = response.substring(19, 21)
+    const responseCode = response.substring(21, 23)
     return responseCode
   }
 
-  public async findAvailableSlot (
+  public async findAvailableSlot(
     socket: Socket,
     machineId: string
   ): Promise<'left' | 'right'> {
@@ -190,7 +190,7 @@ class PlcService {
     }
   }
 
-  public async openDoor (
+  public async openDoor(
     socket: Socket,
     machineId: string,
     slot: 'left' | 'right'
@@ -202,7 +202,7 @@ class PlcService {
       transition
     })
     const response = await this.sendCommandWithRetry(socket, commandString)
-    const responseCode = response.substring(19, 21)
+    const responseCode = response.substring(21, 23)
     if (responseCode !== '39') {
       throw new Error(
         `Failed to open door, PLC responded with T${responseCode}`
@@ -210,7 +210,7 @@ class PlcService {
     }
   }
 
-  public async isDoorClosed (
+  public async isDoorClosed(
     socket: Socket,
     machineId: string
   ): Promise<boolean> {
@@ -218,7 +218,7 @@ class PlcService {
     return status === '30'
   }
 
-  public async turnOffLight (
+  public async turnOffLight(
     socket: Socket,
     machineId: string,
     slot: 'left' | 'right'
