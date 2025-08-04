@@ -26,14 +26,14 @@ export async function createPrescriptionFromPharmacy (
     const newPrescription = await tx.prescription.create({
       data: {
         prescriptionNo: pharmacyData.PrescriptionNo,
-        prescriptionDate: pharmacyData.PrescriptionDate,
+        prescriptionDate: '20240520',
         hn: pharmacyData.HN,
-        an: pharmacyData.AN,
+        an: '7654321',
         patientName: pharmacyData.PatientName,
-        wardCode: pharmacyData.WardCode,
-        wardDesc: pharmacyData.WardDesc,
-        priorityCode: pharmacyData.PriorityCode,
-        priorityDesc: pharmacyData.PriorityDesc
+        wardCode: 'W01',
+        wardDesc: 'Test Ward',
+        priorityCode: 'N',
+        priorityDesc: 'Normal'
       }
     })
 
