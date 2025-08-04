@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Drugs {
+  id          String      @id @default(uuid())
+  drugCode    String      @unique @db.VarChar(20)
+  drugName    String      @db.VarChar(255)
+  drugStatus  Boolean     @default(true)
+  drugImage   String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  inventories Inventory[]
+  orders      Orders[]
+}
+
+model Inventory {
+  id         String    @id @default(uuid())
+  floor      Int
+  position   Int
+  quantity   Int       @default(0)
+  min        Int       @default(0)
+  max        Int       @default(0)
+  status     Boolean   @default(true)
+  expiryDate DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  drugId     String
+  drug       Drugs     @relation(fields: [drugId], references: [id])
+
+  @@unique([floor, position])
+}
+
+model Prescription {
+  id               String   @id @default(uuid())
+  prescriptionNo   String   @unique @db.VarChar(200)
+  prescriptionDate String   @db.VarChar(200)
+  hn               String   @db.VarChar(20)
+  an               String?  @db.VarChar(20)
+  patientName      String   @db.VarChar(200)
+  wardCode         String   @db.VarChar(20)
+  wardDesc         String   @db.VarChar(200)
+  priorityCode     String   @db.VarChar(20)
+  priorityDesc     String   @db.VarChar(200)
+  status           String   @default("ready") @db.VarChar(100)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  orders           Orders[]
+}
+
+model Orders {
+  id             String       @id @default(uuid())
+  orderItemName  String       @db.VarChar(200)
+  quantity       Int
+  unitCode       String       @db.VarChar(20)
+  command        String?      @db.VarChar(200)
+  status         String       @default("ready") @db.VarChar(100)
+  floor          Int
+  position       Int
+  slot           String?      @db.VarChar(3)
+  prescriptionId String
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  drugId         String
+  drug           Drugs        @relation(fields: [drugId], references: [id])
+  machineId      String
+  machine        Machines     @relation(fields: [machineId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([prescriptionId, drugId])
+}
+
+model Machines {
+  id           String   @id @default(uuid())
+  machineName  String   @db.VarChar(200)
+  status       String   @default("offline") @db.Char(20)
+  ipAddress    String?  @unique @db.VarChar(100)
+  running      Int      @default(1)
+  runningCheck Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  orders       Orders[]
+}
+
+model Users {
+  id           String   @id @default(uuid())
+  userName     String   @unique @db.VarChar(155)
+  userPassword String   @db.VarChar(155)
+  userPincode  String?  @db.VarChar(155)
+  displayName  String   @db.VarChar(150)
+  userImage    String?
+  userStatus   Boolean  @default(true)
+  userRole     Role     @default(USER)
+  createBy     String?  @db.VarChar(100)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  USER
+  HEAD_PHARMACIST
+  PHARMACIST
+  ASSISTANT
+  SUPER
+}
