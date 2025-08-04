@@ -63,54 +63,63 @@ class PlcService {
     const checksum = sum % 100
 
     const commandString =
-      `B${pad(cabinet, 2)}` +
-      `R${pad(row, 2)}` +
-      `C${pad(column, 2)}` +
-      `Q${pad(quantity, 4)}` +
-      `L${pad(color, 2)}` +
-      `M${pad(command, 2)}` +
-      `T${pad(dataReturn, 2)}` +
-      `N${pad(transition, 1)}` +
-      `D${pad(device, 4)}` +
-      `S${pad(checksum, 2)}`
-
-    if (commandString.length !== 33) {
-      console.warn(
-        'Warning: Generated command string length is not 33.',
-        commandString
-      )
-    }
+      `B${pad(cabinet, 2)}R${pad(row, 2)}C${pad(column, 2)}Q${pad(
+        quantity,
+        4
+      )}L${pad(color, 2)}` +
+      `M${pad(command, 2)}T${pad(dataReturn, 2)}N${pad(transition, 1)}D${pad(
+        device,
+        4
+      )}S${pad(checksum, 2)}`
 
     return commandString
   }
 
-  private async sendAndAwaitResponse (
+  private async sendCommandWithRetry (
     socket: Socket,
     commandString: string,
-    successCode: string
+    timeoutMs = 2500
   ): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        socket.removeListener('data', onData)
-        reject(new Error(`PLC response timeout for command: ${commandString}`))
-      }, 10000)
+    const MAX_RETRIES = 3
 
-      const onData = (data: Buffer) => {
-        const response = data.toString()
-        console.log(`[PLC Response]: ${response}`)
-        const responseCode = response.substring(19, 21)
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      console.log(
+        `[PLC Send attempt ${attempt}/${MAX_RETRIES}]: ${commandString}`
+      )
+      socket.write(commandString)
 
-        if (responseCode === successCode) {
-          clearTimeout(timeout)
-          socket.removeListener('data', onData)
-          resolve(response)
+      try {
+        const response = await new Promise<string>((resolve, reject) => {
+          let timeoutId: NodeJS.Timeout
+
+          const onData = (data: Buffer) => {
+            clearTimeout(timeoutId)
+            socket.removeListener('data', onData)
+            resolve(data.toString())
+          }
+
+          socket.on('data', onData)
+
+          timeoutId = setTimeout(() => {
+            socket.removeListener('data', onData)
+            reject(
+              new Error(`Timeout after ${timeoutMs}ms on attempt ${attempt}`)
+            )
+          }, timeoutMs)
+        })
+
+        console.log(`[PLC Response on attempt ${attempt}]: ${response}`)
+        return response
+      } catch (error) {
+        console.warn((error as Error).message)
+        if (attempt === MAX_RETRIES) {
+          throw new Error(
+            `PLC failed to respond for command '${commandString}' after ${MAX_RETRIES} attempts.`
+          )
         }
       }
-
-      socket.on('data', onData)
-      console.log(`[PLC Send]: ${commandString}`)
-      socket.write(commandString)
-    })
+    }
+    throw new Error('sendCommandWithRetry logic reached an unexpected state.')
   }
 
   public async dispenseDrug (
@@ -134,13 +143,19 @@ class PlcService {
       transition: transition
     })
 
-    try {
-      await this.sendAndAwaitResponse(socket, commandString, '92')
-      return true
-    } catch (error) {
-      console.error('Dispense drug failed:', error)
-      return false
+    const response = await this.sendCommandWithRetry(
+      socket,
+      commandString,
+      15000
+    )
+    const responseCode = response.substring(19, 21)
+
+    if (responseCode !== '92') {
+      throw new Error(
+        `Dispense command failed, PLC responded with T${responseCode}`
+      )
     }
+    return true
   }
 
   public async checkStatus (
@@ -154,7 +169,7 @@ class PlcService {
       transition: transition
     })
 
-    const response = await this.sendAndAwaitResponse(socket, commandString, '')
+    const response = await this.sendCommandWithRetry(socket, commandString)
     const responseCode = response.substring(19, 21)
     return responseCode
   }
@@ -170,11 +185,8 @@ class PlcService {
       case '36':
       case '34':
         return 'right'
-      case '37':
       default:
-        throw new Error(
-          `Tray is full or in an unknown state (T${status}). Cannot dispense.`
-        )
+        throw new Error(`Tray is full or in an unknown state (T${status}).`)
     }
   }
 
@@ -189,31 +201,21 @@ class PlcService {
       command: commandCode,
       transition
     })
-    await this.sendAndAwaitResponse(socket, commandString, '39')
+    const response = await this.sendCommandWithRetry(socket, commandString)
+    const responseCode = response.substring(19, 21)
+    if (responseCode !== '39') {
+      throw new Error(
+        `Failed to open door, PLC responded with T${responseCode}`
+      )
+    }
   }
 
   public async isDoorClosed (
     socket: Socket,
     machineId: string
   ): Promise<boolean> {
-    try {
-      const status = await this.checkStatus(socket, machineId, 38)
-
-      if (status === '30') {
-        console.log(
-          `[PLC Status] Door check successful (T${status}): Doors are closed and locked.`
-        )
-        return true
-      } else {
-        console.log(
-          `[PLC Status] Door check (T${status}): Doors are not fully closed/locked.`
-        )
-        return false
-      }
-    } catch (error) {
-      console.error('Failed to check door status:', error)
-      return false
-    }
+    const status = await this.checkStatus(socket, machineId, 38)
+    return status === '30'
   }
 
   public async turnOffLight (
@@ -227,7 +229,14 @@ class PlcService {
       command: commandCode,
       transition
     })
-    socket.write(commandString)
+
+    try {
+      await this.sendCommandWithRetry(socket, commandString)
+    } catch (error) {
+      console.warn(
+        "Could not confirm 'turnOffLight' command was received, but continuing anyway."
+      )
+    }
   }
 }
 

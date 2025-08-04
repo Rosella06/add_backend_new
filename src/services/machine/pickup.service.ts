@@ -24,7 +24,7 @@ class PickupService {
 
     const socket = tcpService.getSocketByMachineId(machineId)
     if (!socket) {
-      await updateOrderStatus(orderId, 'dispensed') // Rollback status
+      await updateOrderStatus(orderId, 'dispensed')
       throw new HttpError(503, `Machine ${machineId} is not connected.`)
     }
 
