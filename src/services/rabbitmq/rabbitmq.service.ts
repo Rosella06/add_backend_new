@@ -79,6 +79,16 @@ class RabbitMQService {
     }
   }
 
+  public async deleteQueue (queueName: string): Promise<void> {
+    try {
+      const channel = this.getChannel()
+      await channel.purgeQueue(queueName)
+      console.log(`[RabbitMQ] Successfully deleted queue: ${queueName}`)
+    } catch (error) {
+      console.error(`Failed to delete queue ${queueName}:`, error)
+    }
+  }
+
   public async close (): Promise<void> {
     if (!this.isInitialized) {
       return

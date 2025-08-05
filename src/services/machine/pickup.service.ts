@@ -3,6 +3,7 @@ import { plcService } from './plc.service'
 import { updateOrderStatus } from '../order.service'
 import { socketService } from '../../utils/socket.service'
 import { HttpError } from '../../types/global'
+import systemEventEmitter, { SystemEvents } from '../../utils/system.events'
 
 const DOOR_CHECK_INTERVAL = 2000
 const PICKUP_TIMEOUT = 3 * 60 * 1000
@@ -95,6 +96,10 @@ class PickupService {
             slot as 'left' | 'right'
           )
           socketService.getIO().emit('pickup_complete', { orderId })
+          console.log(
+            `[Event] Emitting PICKUP_COMPLETED for machine: ${machineId}`
+          )
+          systemEventEmitter.emit(SystemEvents.PICKUP_COMPLETED, { machineId })
         }
       } catch (error) {
         console.error(

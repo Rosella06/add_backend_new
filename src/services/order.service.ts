@@ -6,6 +6,21 @@ import { Orders, Prescription } from '@prisma/client'
 
 const EXCHANGE_NAME = 'drug_dispenser_exchange'
 
+export async function getOrderDispenseService (): Promise<Prescription[]> {
+  const results = await prisma.prescription.findMany({
+    include: {
+      orders: {
+        orderBy: [{ floor: 'asc' }, { position: 'asc' }]
+      }
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  })
+
+  return results
+}
+
 export async function createPrescriptionFromPharmacy (
   rfid: string,
   machineId: string
@@ -37,17 +52,17 @@ export async function createPrescriptionFromPharmacy (
       }
     })
 
-    // This is a simplified mapping. You might need to query your DB to match drug codes.
     const ordersData = await Promise.all(
       pharmacyData.Prescription.map(async item => {
         const drug = await tx.drugs.findUnique({
           where: { drugCode: item.f_orderitemcode }
         })
-        if (!drug)
+        if (!drug) {
           throw new HttpError(
             404,
             `Drug with code ${item.f_orderitemcode} not found in our system.`
           )
+        }
 
         return {
           orderItemName: item.f_orderitemname,
@@ -63,9 +78,18 @@ export async function createPrescriptionFromPharmacy (
       })
     )
 
-    await tx.orders.createMany({ data: ordersData })
+    const sortedOrdersData = ordersData.sort((a, b) => {
+      if (a.floor !== b.floor) {
+        return a.floor - b.floor
+      }
+      return a.position - b.position
+    })
+
+    await tx.orders.createMany({ data: sortedOrdersData })
+
     const createdOrders = await tx.orders.findMany({
-      where: { prescriptionId: newPrescription.id }
+      where: { prescriptionId: newPrescription.id },
+      orderBy: [{ floor: 'asc' }, { position: 'asc' }]
     })
 
     return { prescription: newPrescription, orders: createdOrders }
@@ -82,7 +106,12 @@ export async function createPrescriptionFromPharmacy (
     rabbitService.publishToExchange(EXCHANGE_NAME, order.machineId, message)
   }
 
-  return transactionResult.prescription
+  const finalOrder = {
+    ...transactionResult.prescription,
+    orders: transactionResult.orders
+  }
+
+  return finalOrder
 }
 
 export async function findNextOrderToPickup (orderId: string) {
@@ -109,6 +138,46 @@ export async function updateOrderSlot (
 ): Promise<Orders> {
   return prisma.orders.update({
     where: { id: orderId },
-    data: { slot: slot === "right" ? "M01" : "M02" }
+    data: { slot: slot }
   })
+}
+
+export async function deleteAllOrder (machineId: string): Promise<string> {
+  const mainQueueName = `orders_queue_${machineId}`
+  const waitQueueName = `wait_queue_${machineId}`
+
+  await rabbitService.deleteQueue(mainQueueName)
+  await rabbitService.deleteQueue(waitQueueName)
+
+  const prescriptionsToClear = await prisma.prescription.findMany({
+    where: {
+      orders: {
+        some: {
+          machineId: machineId
+        }
+      }
+    },
+    select: {
+      id: true
+    }
+  })
+
+  if (prescriptionsToClear.length === 0) {
+    return `No pending prescriptions to clear for machine ${machineId}.`
+  }
+
+  const prescriptionIds = prescriptionsToClear.map(p => p.id)
+
+  const deleteResult = await prisma.prescription.deleteMany({
+    where: {
+      id: {
+        in: prescriptionIds
+      }
+    }
+  })
+
+  const message = `Successfully cleared ${deleteResult.count} prescription(s) and their associated orders for machine ${machineId}.`
+  console.log(message)
+
+  return message
 }
