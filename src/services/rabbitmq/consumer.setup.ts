@@ -117,12 +117,10 @@ export async function setupRabbitMQConsumers () {
 
           if (dispensed) {
             await updateOrderStatus(order.orderId, 'dispensed')
-            socketService
-              .getIO()
-              .emit('drug_dispensed', {
-                orderId: order.orderId,
-                slot: slotIdentifier
-              })
+            socketService.getIO().emit('drug_dispensed', {
+              orderId: order.orderId,
+              slot: slotIdentifier
+            })
 
             channel.ack(msg)
             console.log(
@@ -136,21 +134,25 @@ export async function setupRabbitMQConsumers () {
         } catch (error) {
           const errorMessage = (error as Error).message
 
+          console.log('--------------------------------------------------')
+          console.error(
+            `[Consumer for ${machineId}] CATCH BLOCK TRIGGERED for order ${order.orderId}`
+          )
+          console.error(`  - Error Message: ${errorMessage}`)
+          console.error(`  - Order Details:`, order)
+          console.log('--------------------------------------------------')
+
           if (errorMessage.includes('Tray is full')) {
             console.warn(
-              `[Consumer for ${machineId}] Tray is full. Pausing and waiting for a slot to be freed.`
+              `[Consumer for ${machineId}] Pausing due to full tray.`
             )
-
             machineAwaitingSlot.set(machineId, true)
-
             channel.nack(msg, false, true)
           } else {
             console.error(
-              `[Consumer for ${machineId}] CRITICAL ERROR processing order ${order.orderId}:`,
-              errorMessage
+              `[Consumer for ${machineId}] Updating order ${order.orderId} to 'error' and sending to DLX.`
             )
             await updateOrderStatus(order.orderId, 'error')
-
             channel.nack(msg, false, false)
           }
         }
