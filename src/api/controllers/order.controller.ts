@@ -35,10 +35,10 @@ export const pickupNextDrug = async (
   next: NextFunction
 ) => {
   try {
-    const { prescriptionId } = req.params
+    const { orderId } = req.params
 
     const orderToPickup = await orderService.findNextOrderToPickup(
-      prescriptionId
+      orderId
     )
 
     if (!orderToPickup) {
@@ -48,7 +48,7 @@ export const pickupNextDrug = async (
       })
     }
 
-    const { id: orderId, machineId, slot, drug } = orderToPickup
+    const { id, machineId, slot, drug } = orderToPickup
 
     if (!machineId || !slot) {
       throw new HttpError(
@@ -57,13 +57,13 @@ export const pickupNextDrug = async (
       )
     }
 
-    await orderService.updateOrderStatus(orderId, 'pickup')
-    await pickupService.initiatePickup(orderId, machineId, slot)
+    await orderService.updateOrderStatus(id, 'pickup')
+    await pickupService.initiatePickup(id, machineId, slot === "M01" ? "right" : "left")
 
     res.status(200).json({
       success: true,
       message: `Opening door at slot ${slot} for drug: ${drug.drugName}`,
-      data: { orderId, slot, drugName: drug.drugName }
+      data: { id, slot, drugName: drug.drugName }
     })
   } catch (error) {
     next(error)

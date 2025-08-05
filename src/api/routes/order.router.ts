@@ -7,6 +7,6 @@ import {
 const orderRouter = Router()
 
 orderRouter.post('/dispense', dispenseNewPrescription)
-orderRouter.post('/pickup/:prescriptionId', pickupNextDrug)
+orderRouter.post('/pickup/:orderId', pickupNextDrug)
 
 export default orderRouter

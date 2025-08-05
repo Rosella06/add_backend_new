@@ -57,7 +57,8 @@ export async function createPrescriptionFromPharmacy (
           position: parseInt(item.f_binlocation.substring(1)),
           prescriptionId: newPrescription.id,
           machineId: machineId,
-          drugId: drug.id
+          drugId: drug.id,
+          status: 'ready'
         }
       })
     )
@@ -84,9 +85,9 @@ export async function createPrescriptionFromPharmacy (
   return transactionResult.prescription
 }
 
-export async function findNextOrderToPickup (prescriptionId: string) {
+export async function findNextOrderToPickup (orderId: string) {
   return prisma.orders.findFirst({
-    where: { prescriptionId: prescriptionId, status: 'dispensed' },
+    where: { id: orderId, status: 'dispensed' },
     orderBy: { createdAt: 'asc' },
     include: { drug: true }
   })
@@ -108,6 +109,6 @@ export async function updateOrderSlot (
 ): Promise<Orders> {
   return prisma.orders.update({
     where: { id: orderId },
-    data: { slot: slot }
+    data: { slot: slot === "right" ? "M01" : "M02" }
   })
 }
