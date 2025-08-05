@@ -1,22 +1,22 @@
-import { tcpService } from '../../utils/tcp.service'
 import { plcService } from './plc.service'
 import { updateOrderStatus } from '../order.service'
-import { socketService } from '../../utils/socket.service'
 import { HttpError } from '../../types/global'
+import { tcpService } from '../../utils/tcp.service'
+import { socketService } from '../../utils/socket.service'
 import systemEventEmitter, { SystemEvents } from '../../utils/system.events'
 
-const DOOR_CHECK_INTERVAL = 2000
+const PICKUP_CHECK_INTERVAL = 2500
 const PICKUP_TIMEOUT = 3 * 60 * 1000
 
 class PickupService {
-  private waitingForDoorClose: Set<string> = new Set()
+  private waitingForPickupCompletion: Set<string> = new Set()
 
   public async initiatePickup (
     orderId: string,
     machineId: string,
-    slot: string
+    slot: 'left' | 'right'
   ): Promise<void> {
-    if (this.waitingForDoorClose.has(orderId)) {
+    if (this.waitingForPickupCompletion.has(orderId)) {
       throw new HttpError(
         409,
         `Pickup process for order ${orderId} is already in progress.`
@@ -29,16 +29,16 @@ class PickupService {
       throw new HttpError(503, `Machine ${machineId} is not connected.`)
     }
 
-    this.waitingForDoorClose.add(orderId)
+    this.waitingForPickupCompletion.add(orderId)
     console.log(
       `[Pickup Service] Initiating for Order: ${orderId} at Slot: ${slot}`
     )
 
     try {
-      await plcService.openDoor(socket, machineId, slot as 'left' | 'right')
-      this.startDoorCheckLoop(orderId, machineId, slot)
+      await plcService.openDoor(socket, machineId, slot)
+      this.startPickupCompletionLoop(orderId, machineId, slot)
     } catch (error) {
-      this.waitingForDoorClose.delete(orderId)
+      this.waitingForPickupCompletion.delete(orderId)
       await updateOrderStatus(orderId, 'dispensed')
       console.error(
         `[Pickup Service] Error initiating pickup for ${orderId}:`,
@@ -48,54 +48,63 @@ class PickupService {
     }
   }
 
-  private startDoorCheckLoop (
+  private startPickupCompletionLoop (
     orderId: string,
     machineId: string,
-    slot: string
+    slot: 'left' | 'right'
   ): void {
     const startTime = Date.now()
     const socket = tcpService.getSocketByMachineId(machineId)
     if (!socket) {
       console.error(
-        `Cannot start door check loop for ${orderId}, socket disconnected.`
+        `Cannot start pickup loop for ${orderId}, socket disconnected.`
       )
-      this.waitingForDoorClose.delete(orderId)
+      this.waitingForPickupCompletion.delete(orderId)
       return
     }
 
     const intervalId = setInterval(async () => {
-      if (!this.waitingForDoorClose.has(orderId)) {
+      if (!this.waitingForPickupCompletion.has(orderId)) {
         clearInterval(intervalId)
         return
       }
 
       if (Date.now() - startTime > PICKUP_TIMEOUT) {
         clearInterval(intervalId)
-        this.waitingForDoorClose.delete(orderId)
+        this.waitingForPickupCompletion.delete(orderId)
         console.error(`[Pickup Service] Timeout for order ${orderId}.`)
         socketService.getIO().emit('pickup_error', {
           orderId,
-          message: 'Timeout: ประตูไม่ได้ปิดภายใน 3 นาที'
+          message: 'Timeout: การรับยาไม่เสร็จสิ้นใน 3 นาที'
         })
         return
       }
 
       try {
-        const isClosed = await plcService.isDoorClosed(socket, machineId)
-        if (isClosed) {
+        console.log(`[Pickup Loop for ${orderId}] Checking conditions...`)
+        const doorIsClosed = await plcService.isDoorClosed(socket, machineId)
+        const trayIsEmpty = await plcService.isTrayEmpty(
+          socket,
+          machineId,
+          slot
+        )
+
+        console.log(
+          `[Pickup Loop for ${orderId}] Status: Door Closed = ${doorIsClosed}, Tray Empty = ${trayIsEmpty}.`
+        )
+
+        if (doorIsClosed && trayIsEmpty) {
           clearInterval(intervalId)
-          this.waitingForDoorClose.delete(orderId)
+          this.waitingForPickupCompletion.delete(orderId)
+
           console.log(
-            `[Pickup Service] Door closed for order ${orderId}. Finalizing...`
+            `[Pickup Service] Pickup for order ${orderId} is complete (Door Closed & Tray Empty). Finalizing...`
           )
 
           await updateOrderStatus(orderId, 'complete')
-          await plcService.turnOffLight(
-            socket,
-            machineId,
-            slot as 'left' | 'right'
-          )
+          await plcService.turnOffLight(socket, machineId, slot)
           socketService.getIO().emit('pickup_complete', { orderId })
+
           console.log(
             `[Event] Emitting PICKUP_COMPLETED for machine: ${machineId}`
           )
@@ -103,11 +112,11 @@ class PickupService {
         }
       } catch (error) {
         console.error(
-          `[Pickup Service] Error in door check loop for ${orderId}:`,
+          `[Pickup Service] Error in pickup completion loop for ${orderId}:`,
           error
         )
       }
-    }, DOOR_CHECK_INTERVAL)
+    }, PICKUP_CHECK_INTERVAL)
   }
 }
 

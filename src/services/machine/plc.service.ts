@@ -232,6 +232,33 @@ class PlcService {
     return status === '30'
   }
 
+  public async isTrayEmpty (
+    socket: Socket,
+    machineId: string,
+    slot: 'left' | 'right'
+  ): Promise<boolean> {
+    try {
+      const status = await this.checkStatus(socket, machineId, 39)
+
+      console.log(`[PLC Status] Tray check (T${status}) for slot '${slot}'.`)
+
+      if (status === '34') {
+        return true
+      }
+      if (slot === 'left' && status === '35') {
+        return true
+      }
+      if (slot === 'right' && status === '36') {
+        return true
+      }
+
+      return false
+    } catch (error) {
+      console.error(`Failed to check tray status for slot '${slot}':`, error)
+      return false
+    }
+  }
+
   public async turnOffLight (
     socket: Socket,
     machineId: string,
