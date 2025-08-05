@@ -144,7 +144,7 @@ export async function updateOrderSlot (
 
 export async function deleteAllOrder (machineId: string): Promise<string> {
   const mainQueueName = `orders_queue_${machineId}`
-  const waitQueueName = `wait_queue_${machineId}`
+  const waitQueueName = `error_queue_${machineId}`
 
   await rabbitService.deleteQueue(mainQueueName)
   await rabbitService.deleteQueue(waitQueueName)
