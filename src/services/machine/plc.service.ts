@@ -63,12 +63,6 @@ class PlcService {
     return commandString;
   }
 
-  /**
-   * [หัวใจหลัก] ส่งคำสั่งและรอ response ที่มี Transition Number (N) ตรงกันเท่านั้น
-   * @param expectedTransition The N value (1-9) we are waiting for.
-   * @returns The full response string that matches the transition number.
-   * @throws On timeout.
-   */
   private async sendAndAwaitMatchingResponse(
     socket: Socket,
     commandString: string,
@@ -83,22 +77,19 @@ class PlcService {
 
       const onData = (data: Buffer) => {
         const response = data.toString();
-        if (response.length < 25) { // Ignore malformed responses
+        if (response.length < 25) {
           logger.warn(TAG, `Received a malformed or short response: ${response}`);
           return;
         };
 
-        // N is at index 23, the number is at index 24.
         const responseTransition = parseInt(response.substring(24, 25), 10);
 
         if (responseTransition === expectedTransition) {
-          // This is our response!
           clearTimeout(timeoutId);
           socket.removeListener('data', onData);
           logger.info(TAG, `Matched response for N=${expectedTransition}: ${response}`);
           resolve(response);
         } else {
-          // This is a response for another command, ignore it.
           logger.debug(TAG, `Ignored mismatched response (got N=${responseTransition}, want N=${expectedTransition})`);
         }
       };
@@ -109,9 +100,6 @@ class PlcService {
     });
   }
 
-  /**
-   * [ปรับปรุงใหม่] สั่งจัดยา และรอการตอบกลับ 2 ขั้นตอน (T91 -> T92) โดยใช้ Transition Number
-   */
   public async dispenseDrug(
     socket: Socket,
     order: {
@@ -134,7 +122,7 @@ class PlcService {
       });
 
       return await new Promise<boolean>((resolve, reject) => {
-        const timeoutMs = 20000; // Timeout for the entire dispense process
+        const timeoutMs = 20000;
         let got91 = false;
 
         const timeoutId = setTimeout(() => {
@@ -148,9 +136,8 @@ class PlcService {
 
           const responseTransition = parseInt(response.substring(24, 25), 10);
 
-          // --- We only care about responses matching our transition number ---
           if (responseTransition !== transition) {
-            return; // Not for us, ignore.
+            return;
           }
 
           const responseCode = response.substring(21, 23);
@@ -159,18 +146,16 @@ class PlcService {
           if (responseCode === '91' && !got91) {
             got91 = true;
             logger.info(TAG, `PLC acknowledged command (T91) for N=${transition}. Waiting for completion...`);
-            // Keep waiting for T92
           } else if (responseCode === '92' && got91) {
             clearTimeout(timeoutId);
             socket.removeListener('data', onData);
             logger.info(TAG, `PLC confirmed dispense success (T92) for N=${transition}.`);
-            resolve(true); // Success!
+            resolve(true);
           } else {
-            // Received an unexpected code (e.g., an error code, or T92 before T91)
             clearTimeout(timeoutId);
             socket.removeListener('data', onData);
             logger.error(TAG, `Received unexpected code T${responseCode} for dispense command N=${transition}`);
-            resolve(false); // Failure
+            resolve(false);
           }
         };
 
@@ -184,9 +169,6 @@ class PlcService {
     }
   }
 
-  /**
-   * [ปรับปรุงใหม่] ฟังก์ชันอื่นจะเรียกใช้ Helper ที่ฉลาดขึ้น
-   */
   public async checkStatus(
     socket: Socket,
     machineId: string,
@@ -262,11 +244,8 @@ class PlcService {
     const commandCode = slot === 'right' ? 36 : 37;
     const commandString = await this.createCommand({ command: commandCode, transition });
     try {
-      // For fire-and-forget, we still want to ensure it's sent reliably
-      // but might not need a specific response. We can use a short timeout.
       await this.sendAndAwaitMatchingResponse(socket, commandString, transition, 1000);
     } catch (error) {
-      // This is not a critical error, just log a warning
       logger.warn(TAG, `Could not confirm 'turnOffLight' (N=${transition}) was received, but continuing anyway.`);
     }
   }
