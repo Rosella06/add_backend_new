@@ -85,7 +85,7 @@ function formatColumn (text: string, length: number): string {
 
 class Logger {
   private pid: string = process.pid.toString()
-  private projectName: string = PROJECT_NAME.toUpperCase()
+  private projectName: string = PROJECT_NAME
 
   private log (
     level: LogLevel,
@@ -197,7 +197,7 @@ class Logger {
 
   public separator (message: string): void {
     const terminalWidth = process.stdout.columns || 80
-    const messageText = ` PROCESS ${message.toUpperCase()} `
+    const messageText = ` PROCESS ${message} `
     const lineLength = Math.floor((terminalWidth - messageText.length) / 2)
     const line = '-'.repeat(lineLength)
 
