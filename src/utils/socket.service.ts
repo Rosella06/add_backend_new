@@ -14,12 +14,12 @@ class SocketService {
     })
 
     this.io.on('connection', (socket: Socket) => {
-      logger.info(this.TAG, `✅ Socket.IO: User connected ${socket.id}`)
+      logger.info(this.TAG, `Socket.IO: User connected ${socket.id}`)
       socket.on('disconnect', () => {
         logger.info(this.TAG, `Socket.IO: User disconnected ${socket.id}`)
       })
     })
-    logger.info(this.TAG, '✅ Socket.IO Service initialized')
+    logger.info(this.TAG, 'Socket.IO Service initialized')
   }
 
   public getIO (): SocketIOServer {

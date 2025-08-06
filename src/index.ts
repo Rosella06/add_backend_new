@@ -32,7 +32,7 @@ const startServer = async () => {
     server.listen(config.port, () => {
       logger.info(
         TAG,
-        `✅ Server is running on http://localhost:${config.port}`
+        `Server is running on http://localhost:${config.port}`
       )
       logger.info(TAG, 'API, TCP, and Socket.IO are ready.')
     })
@@ -41,7 +41,7 @@ const startServer = async () => {
   } catch (error) {
     logger.error(
       TAG,
-      '❌ Failed to start critical services (e.g., TCP Server):',
+      'Failed to start critical services (e.g., TCP Server):',
       error
     )
     logger.separator(

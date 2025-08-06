@@ -20,14 +20,14 @@ export async function setupRabbitMQConsumers() {
   })
 
   if (allMachines.length === 0) {
-    logger.error(TAG, '⚠️ No online machines found. No consumers will be started.')
+    logger.error(TAG, 'No online machines found. No consumers will be started.')
     return
   }
 
   await channel.assertExchange(MAIN_EXCHANGE, 'direct', { durable: true })
   await channel.assertExchange(RETRY_DLX, 'fanout', { durable: true })
   await channel.assertExchange(ERROR_DLX, 'fanout', { durable: true })
-  logger.info(TAG, `✅ RabbitMQ Exchanges are ready.`)
+  logger.info(TAG, `RabbitMQ Exchanges are ready.`)
 
   for (const machine of allMachines) {
     const machineId = machine.id
@@ -50,7 +50,7 @@ export async function setupRabbitMQConsumers() {
     await channel.bindQueue(mainQueueName, MAIN_EXCHANGE, machineId)
 
     await channel.prefetch(1)
-    logger.error(TAG,
+    logger.info(TAG,
       `[Consumer Setup] Machine [${machineId}]: Consumer ready for queue '${mainQueueName}'.`
     )
 

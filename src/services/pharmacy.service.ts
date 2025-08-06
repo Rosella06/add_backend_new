@@ -67,7 +67,7 @@ export async function getPharmacyPrescriptionData (
           f_prioritydesc: 'New',
           f_orderitemcode: 'P5TTS',
           f_orderitemname: 'PARACETAMOL TAB. 500 MG (SARA)',
-          f_orderqty: 10,
+          f_orderqty: 3,
           f_orderunitcode: 'TAB',
           Machine: 'ADD',
           command: 'B0115D0010S1D4321',
