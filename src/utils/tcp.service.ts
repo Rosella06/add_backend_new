@@ -28,7 +28,7 @@ class TcpService {
           if (machine) {
             logger.info(
               this.TAG,
-              `✅ [TCP] IP ${clientIp} matched with Machine ID: ${machine.id}`
+              `[TCP] IP ${clientIp} matched with Machine ID: ${machine.id}`
             )
 
             if (this.connectedSockets.has(machine.id)) {
@@ -68,7 +68,7 @@ class TcpService {
           } else {
             logger.warn(
               this.TAG,
-              `⚠️ [TCP] No machine found for IP: ${clientIp}.`
+              `[TCP] No machine found for IP: ${clientIp}.`
             )
           }
         } catch (error) {
@@ -78,7 +78,7 @@ class TcpService {
       })
 
       this.server.listen(port, () => {
-        logger.info(this.TAG, `✅ TCP Server is listening on port ${port}`)
+        logger.info(this.TAG, `TCP Server is listening on port ${port}`)
         resolve()
       })
       this.server.on('error', err => reject(err))

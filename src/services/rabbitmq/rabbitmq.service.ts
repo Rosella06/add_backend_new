@@ -27,19 +27,19 @@ class RabbitMQService {
       this.channel = await this.connectionManager.createChannel()
       this.isInitialized = true
       this.isConnecting = false
-      logger.info(this.TAG, '✅ RabbitMQ Service initialized')
+      logger.info(this.TAG, 'RabbitMQ Service initialized')
 
       const { setupRabbitMQConsumers } = await import('./consumer.setup')
       await setupRabbitMQConsumers()
 
       this.connectionManager.on('error', (err: Error) => {
-        logger.error('❌ RabbitMQ connection error:', err.message)
+        logger.error(this.TAG, `RabbitMQ connection error: ${err.message}`)
       })
 
       this.connectionManager.on('close', () => {
         logger.error(
           this.TAG,
-          '❌ RabbitMQ connection closed! Re-initializing...'
+          'RabbitMQ connection closed! Re-initializing...'
         )
         this.isInitialized = false
         this.connectionManager = null
@@ -50,7 +50,7 @@ class RabbitMQService {
       this.isConnecting = false
       logger.error(
         this.TAG,
-        `❌ Failed to initialize RabbitMQ (${err.code}). Retrying in ${
+        `Failed to initialize RabbitMQ (${err.code}). Retrying in ${
           this.retryDelay / 1000
         } seconds...`
       )

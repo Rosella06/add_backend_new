@@ -109,7 +109,7 @@ class Logger {
       const indentation = ' '.repeat(plainPrefix.length)
 
       const tagColor = getColorForTag(tag)
-      const coloredTag = `${tagColor}${formatColumn(`[${tag}]`, 15)}${
+      const coloredTag = `${tagColor}${formatColumn(`[${tag}]`, 20)}${
         colors.reset
       }`
       const formattedProjectName = formatColumn(this.projectName, 15)
