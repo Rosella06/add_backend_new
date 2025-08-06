@@ -5,7 +5,7 @@ import { socketService } from './utils/socket.service'
 import { tcpService } from './utils/tcp.service'
 import { rabbitService } from './services/rabbitmq/rabbitmq.service'
 import { logger } from './utils/logger'
-const TAG = "[SERVER]"
+const TAG = "SERVER"
 
 const server = http.createServer(app)
 

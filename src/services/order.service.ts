@@ -6,7 +6,7 @@ import { Orders, Prescription } from '@prisma/client'
 import { logger } from '../utils/logger'
 
 const EXCHANGE_NAME = 'drug_dispenser_exchange'
-const TAG = '[ORDER-SERVICE]'
+const TAG = 'ORDER-SERVICE'
 
 export async function getOrderDispenseService (): Promise<Prescription[]> {
   const results = await prisma.prescription.findMany({

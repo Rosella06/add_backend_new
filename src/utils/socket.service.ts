@@ -4,7 +4,7 @@ import { logger } from '../utils/logger'
 
 class SocketService {
   private io: SocketIOServer | null = null
-  private TAG = "[SOCKET]"
+  private TAG = "SOCKET"
 
   public initialize (server: HTTPServer): void {
     if (this.io) return

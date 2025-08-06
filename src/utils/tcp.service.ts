@@ -5,7 +5,7 @@ import { logger } from '../utils/logger'
 class TcpService {
   private server: net.Server | null = null
   private connectedSockets: Map<string, Socket> = new Map()
-  private TAG = '[TCP]'
+  private TAG = 'TCP'
 
   public initialize (port: number): Promise<void> {
     return new Promise((resolve, reject) => {

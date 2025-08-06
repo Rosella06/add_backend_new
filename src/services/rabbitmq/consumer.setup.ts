@@ -6,7 +6,7 @@ import { updateOrderSlot, updateOrderStatus } from '../order.service'
 import { rabbitService } from './rabbitmq.service'
 import { logger } from '../../utils/logger'
 
-const TAG = '[CONSUMER-SETUP]'
+const TAG = 'CONSUMER-SETUP'
 
 const MAIN_EXCHANGE = 'drug_dispenser_exchange'
 const RETRY_DLX = 'retry_dlx'

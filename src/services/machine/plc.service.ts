@@ -2,7 +2,7 @@ import { Socket } from 'net'
 import prisma from '../../config/prisma'
 import { logger } from '../../utils/logger'
 
-const TAG = '[PLC-SERVICE]'
+const TAG = 'PLC-SERVICE'
 
 function pad (num: number, size: number): string {
   let s = num.toString()

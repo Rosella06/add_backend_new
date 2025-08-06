@@ -8,7 +8,7 @@ class RabbitMQService {
   private isInitialized = false
   private isConnecting = false
   private readonly retryDelay = 5000
-  private TAG = '[RabbitMQ]'
+  private TAG = 'RabbitMQ'
 
   public async init (): Promise<void> {
     if (this.isInitialized || this.isConnecting) {

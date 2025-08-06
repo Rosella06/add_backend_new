@@ -8,7 +8,7 @@ import { logger } from '../../utils/logger'
 
 const PICKUP_CHECK_INTERVAL = 2500
 const PICKUP_TIMEOUT = 3 * 60 * 1000
-const TAG = '[PICKUP-SERVICE]'
+const TAG = 'PICKUP-SERVICE'
 
 class PickupService {
   private waitingForPickupCompletion: Set<string> = new Set()

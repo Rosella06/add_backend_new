@@ -1,7 +1,6 @@
 import axios from 'axios'
-import { config } from '../config'
 import { HttpError } from '../types/global'
-import { PharmacyResponse } from '../types/order' // Define this type based on actual response
+import { PharmacyResponse } from '../types/order'
 
 export async function getPharmacyPrescriptionData (
   rfid: string
