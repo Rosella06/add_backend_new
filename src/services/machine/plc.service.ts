@@ -115,7 +115,7 @@ class PlcService {
         logger.debug(TAG, `[PLC Response on attempt ${attempt}]: ${response}`)
         return response
       } catch (error) {
-        console.warn((error as Error).message)
+        logger.error(TAG,(error as Error).message)
         if (attempt === MAX_RETRIES) {
           throw new Error(
             `PLC failed to respond for command '${commandString}' after ${MAX_RETRIES} attempts.`
@@ -163,13 +163,13 @@ class PlcService {
         )
         return true
       } else {
-        console.warn(
+        logger.error(TAG,
           `[PLC Info] Dispense command for order received a non-success response: T${responseCode}`
         )
         return false
       }
     } catch (error) {
-      console.error(
+     logger.error(TAG,
         `[PLC Error] Dispense drug process failed entirely:`,
         (error as Error).message
       )
@@ -262,7 +262,7 @@ class PlcService {
 
       return false
     } catch (error) {
-      console.error(`Failed to check tray status for slot '${slot}':`, error)
+      logger.error(TAG,`Failed to check tray status for slot '${slot}':`, error)
       return false
     }
   }
@@ -282,7 +282,7 @@ class PlcService {
     try {
       await this.sendCommandWithRetry(socket, commandString)
     } catch (error) {
-      console.warn(
+      logger.error(TAG,
         "Could not confirm 'turnOffLight' command was received, but continuing anyway."
       )
     }

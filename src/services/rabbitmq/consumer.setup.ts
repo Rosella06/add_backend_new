@@ -13,14 +13,14 @@ const RETRY_DLX = 'retry_dlx'
 const ERROR_DLX = 'error_dlx'
 const RETRY_DELAY = 5000
 
-export async function setupRabbitMQConsumers () {
+export async function setupRabbitMQConsumers() {
   const channel = rabbitService.getChannel()
   const allMachines = await prisma.machines.findMany({
     where: { status: 'online' }
   })
 
   if (allMachines.length === 0) {
-    console.warn('⚠️ No online machines found. No consumers will be started.')
+    logger.error(TAG, '⚠️ No online machines found. No consumers will be started.')
     return
   }
 
@@ -50,7 +50,7 @@ export async function setupRabbitMQConsumers () {
     await channel.bindQueue(mainQueueName, MAIN_EXCHANGE, machineId)
 
     await channel.prefetch(1)
-    console.log(
+    logger.error(TAG,
       `[Consumer Setup] Machine [${machineId}]: Consumer ready for queue '${mainQueueName}'.`
     )
 
@@ -60,7 +60,7 @@ export async function setupRabbitMQConsumers () {
         if (!msg) return
 
         const order = JSON.parse(msg.content.toString())
-        console.log(
+        logger.debug(TAG,
           `[Consumer for ${machineId}] Received job for order: ${order.orderId}`
         )
 
@@ -85,7 +85,7 @@ export async function setupRabbitMQConsumers () {
               slot: slotIdentifier
             })
             channel.ack(msg)
-            console.log(
+            logger.debug(TAG,
               `[Consumer for ${machineId}] Job for order ${order.orderId} completed and acknowledged.`
             )
           } else {
@@ -93,7 +93,7 @@ export async function setupRabbitMQConsumers () {
           }
         } catch (error) {
           const errorMessage = (error as Error).message
-          console.error(
+          logger.error(TAG,
             `[Consumer for ${machineId}] Failed job for order ${order.orderId}: ${errorMessage}`
           )
 
@@ -101,7 +101,7 @@ export async function setupRabbitMQConsumers () {
             errorMessage.includes('Tray is full') ||
             errorMessage.includes('Socket not connected')
           ) {
-            console.warn(
+            logger.warn(TAG,
               `   -> Sending to retry queue for ${RETRY_DELAY / 1000}s.`
             )
             channel.publish(RETRY_DLX, machineId, msg.content, {
@@ -109,7 +109,7 @@ export async function setupRabbitMQConsumers () {
             })
             channel.ack(msg)
           } else {
-            console.error(`   -> Sending to error queue permanently.`)
+            logger.error(TAG, `   -> Sending to error queue permanently.`)
             await updateOrderStatus(order.orderId, 'error')
             channel.publish(ERROR_DLX, machineId, msg.content, {
               persistent: true
