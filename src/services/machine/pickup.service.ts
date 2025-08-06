@@ -43,7 +43,7 @@ class PickupService {
     } catch (error) {
       this.waitingForPickupCompletion.delete(orderId)
       await updateOrderStatus(orderId, 'dispensed')
-      console.error(
+      logger.error(TAG,
         `[Pickup Service] Error initiating pickup for ${orderId}:`,
         error
       )
@@ -59,7 +59,7 @@ class PickupService {
     const startTime = Date.now()
     const socket = tcpService.getSocketByMachineId(machineId)
     if (!socket) {
-      console.error(
+      logger.error(TAG,
         `Cannot start pickup loop for ${orderId}, socket disconnected.`
       )
       this.waitingForPickupCompletion.delete(orderId)
@@ -75,7 +75,7 @@ class PickupService {
       if (Date.now() - startTime > PICKUP_TIMEOUT) {
         clearInterval(intervalId)
         this.waitingForPickupCompletion.delete(orderId)
-        console.error(`[Pickup Service] Timeout for order ${orderId}.`)
+        logger.error(TAG,`[Pickup Service] Timeout for order ${orderId}.`)
         socketService.getIO().emit('pickup_error', {
           orderId,
           message: 'Timeout: การรับยาไม่เสร็จสิ้นใน 3 นาที'
@@ -117,7 +117,7 @@ class PickupService {
           systemEventEmitter.emit(SystemEvents.PICKUP_COMPLETED, { machineId })
         }
       } catch (error) {
-        console.error(
+        logger.error(TAG,
           `[Pickup Service] Error in pickup completion loop for ${orderId}:`,
           error
         )
