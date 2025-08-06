@@ -11,18 +11,20 @@ function getProjectName (): string {
   }
 }
 const PROJECT_NAME = getProjectName()
+const BRIGHT = '\x1b[20m'
+
 const colors = {
   reset: '\x1b[0m',
-  bright: '\x1b[1m',
+  bright: BRIGHT,
   fg: {
     black: '\x1b[30m',
-    white: '\x1b[37m',
-    red: '\x1b[31m',
-    green: '\x1b[32m',
-    yellow: '\x1b[33m',
-    blue: '\x1b[34m',
-    magenta: '\x1b[35m',
-    cyan: '\x1b[36m'
+    white: BRIGHT + '\x1b[37m',
+    red: BRIGHT + '\x1b[31m',
+    green: BRIGHT + '\x1b[32m',
+    yellow: BRIGHT + '\x1b[33m',
+    blue: BRIGHT + '\x1b[34m',
+    magenta: BRIGHT + '\x1b[35m',
+    cyan: BRIGHT + '\x1b[36m'
   },
   bg: {
     red: '\x1b[41m',
@@ -190,6 +192,17 @@ class Logger {
       tag,
       message,
       ...args
+    )
+  }
+
+  public separator (message: string): void {
+    const terminalWidth = process.stdout.columns || 80
+    const messageText = ` PROCESS ${message.toUpperCase()} `
+    const lineLength = Math.floor((terminalWidth - messageText.length) / 2)
+    const line = '-'.repeat(lineLength)
+
+    console.log(
+      `${colors.fg.white}${colors.bright}${line}${messageText}${line}${colors.reset}`
     )
   }
 }
