@@ -97,27 +97,21 @@ class Logger {
     if (CURRENT_LOG_LEVEL <= level) {
       const timestamp = getTimestamp()
       const pidTid = `${this.pid}-${this.pid}`
+      const plainPrefix = `${timestamp} ${formatColumn(
+        pidTid,
+        12
+      )} ${formatColumn(`[${tag}]`, 15)} ${formatColumn(
+        this.projectName,
+        15
+      )} ${levelChar} `
+      const indentation = ' '.repeat(plainPrefix.length)
+
       const tagColor = getColorForTag(tag)
-      const coloredTag = `${tagColor}${formatColumn(`${tag}`, 15)}${
+      const coloredTag = `${tagColor}${formatColumn(`[${tag}]`, 15)}${
         colors.reset
       }`
       const formattedProjectName = formatColumn(this.projectName, 15)
       const levelIndicator = `${levelBgColor}${levelFgColor}${colors.bright} ${levelChar} ${colors.reset}`
-
-      const stripAnsi = (str: string) =>
-        str.replace(
-          /[\u001b\u009b][[()#;?]*.?[0-9]*[;:]*.?[0-9]*[;:]*.?[0-9]*;?[0-9]*[a-zA-Z]/g,
-          ''
-        )
-      const prefixLength =
-        [
-          timestamp,
-          formatColumn(pidTid, 12),
-          stripAnsi(coloredTag),
-          formattedProjectName,
-          stripAnsi(levelIndicator)
-        ].join(' ').length + 1
-      const indentation = ' '.repeat(prefixLength)
 
       let coloredMessage = message
       if (level === LogLevel.WARN) {
@@ -142,8 +136,7 @@ class Logger {
               .split('\n')
               .slice(1)
               .map(
-                line =>
-                  `${indentation}${colors.fg.red}${line.trim()}${colors.reset}`
+                line => `${indentation}${colors.fg.red}${line}${colors.reset}`
               )
               .join('\n')
             console.log(stack)
