@@ -42,10 +42,10 @@ const PREDEFINED_TAG_COLORS = new Map<string, string>([
   ['TCP', colors.fg.cyan],
   ['SOCKET', colors.fg.blue],
   ['RabbitMQ', colors.fg.yellow],
-  ['SERVER', colors.fg.green],
-  ['PLCService', colors.fg.magenta],
-  ['PickupService', colors.fg.cyan],
-  ['OrderService', colors.fg.blue]
+  ['SERVER', colors.fg.magenta],
+  ['PLCService', colors.fg.cyan],
+  ['PickupService', colors.fg.blue],
+  ['OrderService', colors.fg.yellow]
 ])
 function getColorForTag (tag: string): string {
   const baseTag = tag.split('-')[0].split(' ')[0]
@@ -95,43 +95,63 @@ class Logger {
     ...args: any[]
   ): void {
     if (CURRENT_LOG_LEVEL <= level) {
-
       const timestamp = getTimestamp()
       const pidTid = `${this.pid}-${this.pid}`
-
       const tagColor = getColorForTag(tag)
       const coloredTag = `${tagColor}${formatColumn(`${tag}`, 15)}${
         colors.reset
       }`
-
-      const formattedProjectName = formatColumn(this.projectName, 25)
-
+      const formattedProjectName = formatColumn(this.projectName, 15)
       const levelIndicator = `${levelBgColor}${levelFgColor}${colors.bright} ${levelChar} ${colors.reset}`
 
+      const stripAnsi = (str: string) =>
+        str.replace(
+          /[\u001b\u009b][[()#;?]*.?[0-9]*[;:]*.?[0-9]*[;:]*.?[0-9]*;?[0-9]*[a-zA-Z]/g,
+          ''
+        )
+      const prefixLength =
+        [
+          timestamp,
+          formatColumn(pidTid, 12),
+          stripAnsi(coloredTag),
+          formattedProjectName,
+          stripAnsi(levelIndicator)
+        ].join(' ').length + 1
+      const indentation = ' '.repeat(prefixLength)
+
       let coloredMessage = message
-      let coloredArgs = args
       if (level === LogLevel.WARN) {
         coloredMessage = colors.fg.yellow + message
-        coloredArgs = args.map(arg =>
-          typeof arg === 'string' ? colors.fg.yellow + arg : arg
-        )
       } else if (level === LogLevel.ERROR) {
         coloredMessage = colors.fg.red + message
-        coloredArgs = args.map(arg =>
-          typeof arg === 'string' ? colors.fg.red + arg : arg
-        )
       }
 
-      console.log(
-        timestamp,
-        formatColumn(pidTid, 12),
-        coloredTag,
-        formattedProjectName,
-        levelIndicator,
-        coloredMessage,
-        ...coloredArgs,
+      const firstLine = `${timestamp} ${formatColumn(
+        pidTid,
+        12
+      )} ${coloredTag} ${formattedProjectName} ${levelIndicator} ${coloredMessage}${
         colors.reset
-      )
+      }`
+
+      console.log(firstLine)
+
+      if (args.length > 0) {
+        args.forEach(arg => {
+          if (arg instanceof Error && arg.stack) {
+            const stack = arg.stack
+              .split('\n')
+              .slice(1)
+              .map(
+                line =>
+                  `${indentation}${colors.fg.red}${line.trim()}${colors.reset}`
+              )
+              .join('\n')
+            console.log(stack)
+          } else {
+            console.log(indentation, arg)
+          }
+        })
+      }
     }
   }
 
