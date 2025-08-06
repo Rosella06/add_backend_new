@@ -4,6 +4,8 @@ import { config } from './config'
 import { socketService } from './utils/socket.service'
 import { tcpService } from './utils/tcp.service'
 import { rabbitService } from './services/rabbitmq/rabbitmq.service'
+import { logger } from './utils/logger'
+const TAG = "[SERVER]"
 
 const server = http.createServer(app)
 
@@ -17,8 +19,8 @@ const startServer = async () => {
 
     // 3. Start HTTP Server (ย้ายมาทำก่อน RabbitMQ)
     server.listen(config.port, () => {
-      console.log(`✅ Server is running on http://localhost:${config.port}`)
-      console.log('API, TCP, and Socket.IO are ready.')
+      logger.info(TAG, `✅ Server is running on http://localhost:${config.port}`)
+      logger.info(TAG,'API, TCP, and Socket.IO are ready.')
     })
 
     // 4. Initialize RabbitMQ Connection (แบบไม่ block)
@@ -26,7 +28,7 @@ const startServer = async () => {
     rabbitService.init()
   } catch (error) {
     // catch block นี้จะทำงานก็ต่อเมื่อ TCP Server ล้มเหลวเท่านั้น
-    console.error('❌ Failed to start critical services (TCP Server):', error)
+    logger.error(TAG,'❌ Failed to start critical services (TCP Server):', error)
     process.exit(1)
   }
 }

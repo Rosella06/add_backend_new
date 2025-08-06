@@ -1,7 +1,6 @@
-// src/services/rabbitmq/rabbitmq.service.ts
-
 import * as amqplib from 'amqplib'
 import { config } from '../../config'
+import { logger } from '../../utils/logger'
 
 class RabbitMQService {
   private connectionManager: amqplib.ChannelModel | null = null
@@ -9,6 +8,7 @@ class RabbitMQService {
   private isInitialized = false
   private isConnecting = false
   private readonly retryDelay = 5000
+  private TAG = '[RabbitMQ]'
 
   public async init (): Promise<void> {
     if (this.isInitialized || this.isConnecting) {
@@ -16,7 +16,7 @@ class RabbitMQService {
     }
 
     this.isConnecting = true
-    console.log('[RabbitMQ] Attempting to connect...')
+    logger.info(this.TAG, 'Attempting to connect...')
 
     try {
       const rabbitConfig = config.rabbit
@@ -27,17 +27,20 @@ class RabbitMQService {
       this.channel = await this.connectionManager.createChannel()
       this.isInitialized = true
       this.isConnecting = false
-      console.log('✅ RabbitMQ Service initialized')
+      logger.info(this.TAG, '✅ RabbitMQ Service initialized')
 
       const { setupRabbitMQConsumers } = await import('./consumer.setup')
       await setupRabbitMQConsumers()
 
       this.connectionManager.on('error', (err: Error) => {
-        console.error('❌ RabbitMQ connection error:', err.message)
+        logger.error('❌ RabbitMQ connection error:', err.message)
       })
 
       this.connectionManager.on('close', () => {
-        console.error('❌ RabbitMQ connection closed! Re-initializing...')
+        logger.error(
+          this.TAG,
+          '❌ RabbitMQ connection closed! Re-initializing...'
+        )
         this.isInitialized = false
         this.connectionManager = null
         this.channel = null
@@ -45,7 +48,8 @@ class RabbitMQService {
       })
     } catch (err: any) {
       this.isConnecting = false
-      console.error(
+      logger.error(
+        this.TAG,
         `❌ Failed to initialize RabbitMQ (${err.code}). Retrying in ${
           this.retryDelay / 1000
         } seconds...`
@@ -71,11 +75,12 @@ class RabbitMQService {
       const channel = this.getChannel()
       const content = Buffer.from(JSON.stringify(message))
       channel.publish(exchange, routingKey, content, { persistent: true })
-      console.log(
+      logger.info(
+        this.TAG,
         `[RabbitMQ] Published to exchange '${exchange}' with key '${routingKey}'`
       )
     } catch (error) {
-      console.error('Failed to publish message:', error)
+      logger.error(this.TAG, 'Failed to publish message:', error)
     }
   }
 
@@ -83,9 +88,12 @@ class RabbitMQService {
     try {
       const channel = this.getChannel()
       await channel.purgeQueue(queueName)
-      console.log(`[RabbitMQ] Successfully deleted queue: ${queueName}`)
+      logger.info(
+        this.TAG,
+        `[RabbitMQ] Successfully deleted queue: ${queueName}`
+      )
     } catch (error) {
-      console.error(`Failed to delete queue ${queueName}:`, error)
+      logger.error(this.TAG, `Failed to delete queue ${queueName}:`, error)
     }
   }
 
@@ -103,12 +111,12 @@ class RabbitMQService {
         await this.connectionManager.close()
       }
     } catch (error) {
-      console.error('Error closing RabbitMQ connection:', error)
+      logger.error(this.TAG, 'Error closing RabbitMQ connection:', error)
     } finally {
       this.isInitialized = false
       this.channel = null
       this.connectionManager = null
-      console.log('RabbitMQ connection closed.')
+      logger.info(this.TAG, 'RabbitMQ connection closed.')
     }
   }
 }

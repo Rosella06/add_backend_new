@@ -3,8 +3,10 @@ import { getPharmacyPrescriptionData } from './pharmacy.service'
 import { rabbitService } from './rabbitmq/rabbitmq.service'
 import { HttpError } from '../types/global'
 import { Orders, Prescription } from '@prisma/client'
+import { logger } from '../utils/logger'
 
 const EXCHANGE_NAME = 'drug_dispenser_exchange'
+const TAG = '[ORDER-SERVICE]'
 
 export async function getOrderDispenseService (): Promise<Prescription[]> {
   const results = await prisma.prescription.findMany({
@@ -179,7 +181,7 @@ export async function deleteAllOrder (machineId: string): Promise<string> {
   })
 
   const message = `Successfully cleared ${deleteResult.count} prescription(s) and their associated orders for machine ${machineId}.`
-  console.log(message)
+  logger.info(TAG, message)
 
   return message
 }

@@ -1,5 +1,8 @@
 import { Socket } from 'net'
 import prisma from '../../config/prisma'
+import { logger } from '../../utils/logger'
+
+const TAG = '[PLC-SERVICE]'
 
 function pad (num: number, size: number): string {
   let s = num.toString()
@@ -83,7 +86,8 @@ class PlcService {
     const MAX_RETRIES = 3
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      console.log(
+      logger.debug(
+        TAG,
         `[PLC Send attempt ${attempt}/${MAX_RETRIES}]: ${commandString}`
       )
       socket.write(commandString)
@@ -108,7 +112,7 @@ class PlcService {
           }, timeoutMs)
         })
 
-        console.log(`[PLC Response on attempt ${attempt}]: ${response}`)
+        logger.debug(TAG, `[PLC Response on attempt ${attempt}]: ${response}`)
         return response
       } catch (error) {
         console.warn((error as Error).message)
@@ -153,7 +157,8 @@ class PlcService {
       const responseCode = response.substring(21, 23)
 
       if (responseCode === '92') {
-        console.log(
+        logger.debug(
+          TAG,
           `[PLC Success] Dispense successful for order. (T${responseCode})`
         )
         return true
@@ -240,7 +245,10 @@ class PlcService {
     try {
       const status = await this.checkStatus(socket, machineId, 39)
 
-      console.log(`[PLC Status] Tray check (T${status}) for slot '${slot}'.`)
+      logger.debug(
+        TAG,
+        `[PLC Status] Tray check (T${status}) for slot '${slot}'.`
+      )
 
       if (status === '34') {
         return true

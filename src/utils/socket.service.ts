@@ -1,8 +1,10 @@
 import { Server as HTTPServer } from 'http'
 import { Server as SocketIOServer, Socket } from 'socket.io'
+import { logger } from '../utils/logger'
 
 class SocketService {
   private io: SocketIOServer | null = null
+  private TAG = "[SOCKET]"
 
   public initialize (server: HTTPServer): void {
     if (this.io) return
@@ -12,12 +14,12 @@ class SocketService {
     })
 
     this.io.on('connection', (socket: Socket) => {
-      console.log(`✅ Socket.IO: User connected ${socket.id}`)
+      logger.info(this.TAG, `✅ Socket.IO: User connected ${socket.id}`)
       socket.on('disconnect', () => {
-        console.log(`Socket.IO: User disconnected ${socket.id}`)
+        logger.info(this.TAG, `Socket.IO: User disconnected ${socket.id}`)
       })
     })
-    console.log('✅ Socket.IO Service initialized')
+    logger.info(this.TAG, '✅ Socket.IO Service initialized')
   }
 
   public getIO (): SocketIOServer {

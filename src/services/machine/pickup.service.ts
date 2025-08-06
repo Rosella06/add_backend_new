@@ -4,9 +4,11 @@ import { HttpError } from '../../types/global'
 import { tcpService } from '../../utils/tcp.service'
 import { socketService } from '../../utils/socket.service'
 import systemEventEmitter, { SystemEvents } from '../../utils/system.events'
+import { logger } from '../../utils/logger'
 
 const PICKUP_CHECK_INTERVAL = 2500
 const PICKUP_TIMEOUT = 3 * 60 * 1000
+const TAG = '[PICKUP-SERVICE]'
 
 class PickupService {
   private waitingForPickupCompletion: Set<string> = new Set()
@@ -30,7 +32,8 @@ class PickupService {
     }
 
     this.waitingForPickupCompletion.add(orderId)
-    console.log(
+    logger.debug(
+      TAG,
       `[Pickup Service] Initiating for Order: ${orderId} at Slot: ${slot}`
     )
 
@@ -81,7 +84,7 @@ class PickupService {
       }
 
       try {
-        console.log(`[Pickup Loop for ${orderId}] Checking conditions...`)
+        logger.debug(TAG, `[Pickup Loop for ${orderId}] Checking conditions...`)
         const doorIsClosed = await plcService.isDoorClosed(socket, machineId)
         const trayIsEmpty = await plcService.isTrayEmpty(
           socket,
@@ -89,7 +92,8 @@ class PickupService {
           slot
         )
 
-        console.log(
+        logger.debug(
+          TAG,
           `[Pickup Loop for ${orderId}] Status: Door Closed = ${doorIsClosed}, Tray Empty = ${trayIsEmpty}.`
         )
 
@@ -97,7 +101,8 @@ class PickupService {
           clearInterval(intervalId)
           this.waitingForPickupCompletion.delete(orderId)
 
-          console.log(
+          logger.debug(
+            TAG,
             `[Pickup Service] Pickup for order ${orderId} is complete (Door Closed & Tray Empty). Finalizing...`
           )
 
@@ -105,7 +110,8 @@ class PickupService {
           await plcService.turnOffLight(socket, machineId, slot)
           socketService.getIO().emit('pickup_complete', { orderId })
 
-          console.log(
+          logger.debug(
+            TAG,
             `[Event] Emitting PICKUP_COMPLETED for machine: ${machineId}`
           )
           systemEventEmitter.emit(SystemEvents.PICKUP_COMPLETED, { machineId })

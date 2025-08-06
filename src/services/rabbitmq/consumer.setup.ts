@@ -4,7 +4,9 @@ import { tcpService } from '../../utils/tcp.service'
 import { plcService } from '../machine/plc.service'
 import { updateOrderSlot, updateOrderStatus } from '../order.service'
 import { rabbitService } from './rabbitmq.service'
-import systemEventEmitter, { SystemEvents } from '../../utils/system.events'
+import { logger } from '../../utils/logger'
+
+const TAG = '[CONSUMER-SETUP]'
 
 const MAIN_EXCHANGE = 'drug_dispenser_exchange'
 const RETRY_DLX = 'retry_dlx'
@@ -25,7 +27,7 @@ export async function setupRabbitMQConsumers () {
   await channel.assertExchange(MAIN_EXCHANGE, 'direct', { durable: true })
   await channel.assertExchange(RETRY_DLX, 'fanout', { durable: true })
   await channel.assertExchange(ERROR_DLX, 'fanout', { durable: true })
-  console.log(`✅ RabbitMQ Exchanges are ready.`)
+  logger.info(TAG, `✅ RabbitMQ Exchanges are ready.`)
 
   for (const machine of allMachines) {
     const machineId = machine.id

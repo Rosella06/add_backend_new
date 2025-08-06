@@ -1,9 +1,11 @@
 import net, { Socket } from 'net'
 import prisma from '../config/prisma'
+import { logger } from '../utils/logger'
 
 class TcpService {
   private server: net.Server | null = null
   private connectedSockets: Map<string, Socket> = new Map()
+  private TAG = '[TCP]'
 
   public initialize (port: number): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -11,7 +13,7 @@ class TcpService {
 
       this.server = net.createServer(async (socket: Socket) => {
         const clientIp = socket.remoteAddress
-        console.log(`[TCP] New client connected from IP: ${clientIp}`)
+        logger.info(this.TAG, `[TCP] New client connected from IP: ${clientIp}`)
 
         if (!clientIp) {
           socket.end()
@@ -24,12 +26,14 @@ class TcpService {
           })
 
           if (machine) {
-            console.log(
+            logger.info(
+              this.TAG,
               `✅ [TCP] IP ${clientIp} matched with Machine ID: ${machine.id}`
             )
 
             if (this.connectedSockets.has(machine.id)) {
-              console.warn(
+              logger.warn(
+                this.TAG,
                 `[TCP] Closing old connection for Machine ${machine.id}.`
               )
               this.connectedSockets.get(machine.id)?.end()
@@ -41,10 +45,13 @@ class TcpService {
             })
 
             socket.on('data', data =>
-              console.log(`[TCP Data from ${machine.id}]: ${data.toString()}`)
+              logger.info(
+                this.TAG,
+                `[TCP Data from ${machine.id}]: ${data.toString()}`
+              )
             )
             socket.on('end', async () => {
-              console.log(`[TCP] Machine ${machine.id} disconnected.`)
+              logger.info(this.TAG, `[TCP] Machine ${machine.id} disconnected.`)
               this.connectedSockets.delete(machine.id)
               await prisma.machines.update({
                 where: { id: machine.id },
@@ -52,19 +59,26 @@ class TcpService {
               })
             })
             socket.on('error', err =>
-              console.error(`[TCP] Socket Error from ${machine.id}:`, err)
+              logger.error(
+                this.TAG,
+                `[TCP] Socket Error from ${machine.id}:`,
+                err
+              )
             )
           } else {
-            console.warn(`⚠️ [TCP] No machine found for IP: ${clientIp}.`)
+            logger.warn(
+              this.TAG,
+              `⚠️ [TCP] No machine found for IP: ${clientIp}.`
+            )
           }
         } catch (error) {
-          console.error('[TCP] Error during machine lookup:', error)
+          logger.error(this.TAG, '[TCP] Error during machine lookup:', error)
           socket.end()
         }
       })
 
       this.server.listen(port, () => {
-        console.log(`✅ TCP Server is listening on port ${port}`)
+        logger.info(this.TAG, `✅ TCP Server is listening on port ${port}`)
         resolve()
       })
       this.server.on('error', err => reject(err))

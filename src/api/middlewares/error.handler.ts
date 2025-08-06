@@ -1,5 +1,8 @@
 import { NextFunction, Request, Response } from 'express'
 import { HttpError } from '../../types/global'
+import { logger } from '../../utils/logger'
+
+const TAG = '[SYSTEM]'
 
 export const globalErrorHandler = (
   err: Error,
@@ -14,7 +17,7 @@ export const globalErrorHandler = (
     })
   }
 
-  console.error('Unhandled Error:', err)
+  logger.error(TAG, 'Unhandled Error:', err)
   return res.status(500).json({
     success: false,
     message: 'Internal Server Error'
