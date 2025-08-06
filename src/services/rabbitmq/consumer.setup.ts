@@ -6,6 +6,7 @@ import { updateOrderSlot, updateOrderStatus } from '../order.service'
 import { rabbitService } from './rabbitmq.service'
 import { logger } from '../../utils/logger'
 import { delay } from '../../utils/system.events'
+import { pickupService } from '../machine/pickup.service'
 
 const TAG = 'CONSUMER-SETUP'
 
@@ -73,6 +74,10 @@ export async function setupRabbitMQConsumers() {
 
           const slot = await plcService.findAvailableSlot(socket, machineId)
 
+          if (pickupService.isSlotBusy(machineId, slot)) {
+            throw new Error(`Target slot (${slot}) is locked for pickup.`);
+          }
+
           await updateOrderStatus(order.orderId, 'pending')
           const slotIdentifier = slot === 'right' ? 'M01' : 'M02'
           await updateOrderSlot(order.orderId, slotIdentifier)
@@ -92,7 +97,7 @@ export async function setupRabbitMQConsumers() {
             logger.debug(TAG, `   -> Applying 500ms cooldown period before next job.`);
             await delay(500)
           } else {
-            throw new Error('PLC failed to dispense (non-92 response).')
+            throw new Error('Dispense-failed-non-92')
           }
         } catch (error) {
           const errorMessage = (error as Error).message
@@ -103,7 +108,10 @@ export async function setupRabbitMQConsumers() {
           if (
             errorMessage.includes('Tray is full') ||
             errorMessage.includes('Socket not connected') ||
-            errorMessage.includes("Timeout waiting for response")
+            errorMessage.includes("Timeout waiting for response") ||
+            errorMessage.includes("is locked for pickup") ||
+            errorMessage.includes("Dispense-failed-non-92") ||
+            errorMessage.includes("Dispense process timed out")
           ) {
             logger.warn(TAG,
               `   -> Sending to retry queue for ${RETRY_DELAY / 1000}s.`
