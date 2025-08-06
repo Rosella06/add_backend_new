@@ -5,6 +5,7 @@ import { plcService } from '../machine/plc.service'
 import { updateOrderSlot, updateOrderStatus } from '../order.service'
 import { rabbitService } from './rabbitmq.service'
 import { logger } from '../../utils/logger'
+import { delay } from '../../utils/system.events'
 
 const TAG = 'CONSUMER-SETUP'
 
@@ -88,6 +89,8 @@ export async function setupRabbitMQConsumers() {
             logger.debug(TAG,
               `[Consumer for ${machineId}] Job for order ${order.orderId} completed and acknowledged.`
             )
+            logger.debug(TAG, `   -> Applying 500ms cooldown period before next job.`);
+            await delay(500)
           } else {
             throw new Error('PLC failed to dispense (non-92 response).')
           }
@@ -99,7 +102,8 @@ export async function setupRabbitMQConsumers() {
 
           if (
             errorMessage.includes('Tray is full') ||
-            errorMessage.includes('Socket not connected')
+            errorMessage.includes('Socket not connected') ||
+            errorMessage.includes("Timeout waiting for response")
           ) {
             logger.warn(TAG,
               `   -> Sending to retry queue for ${RETRY_DELAY / 1000}s.`
