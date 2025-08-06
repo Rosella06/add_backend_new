@@ -85,7 +85,7 @@ function formatColumn (text: string, length: number): string {
 
 class Logger {
   private pid: string = process.pid.toString()
-  private projectName: string = PROJECT_NAME
+  private projectName: string = PROJECT_NAME.toUpperCase()
 
   private log (
     level: LogLevel,
