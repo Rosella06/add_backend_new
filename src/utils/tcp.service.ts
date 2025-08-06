@@ -66,10 +66,7 @@ class TcpService {
               )
             )
           } else {
-            logger.warn(
-              this.TAG,
-              `[TCP] No machine found for IP: ${clientIp}.`
-            )
+            logger.warn(this.TAG, `[TCP] No machine found for IP: ${clientIp}.`)
           }
         } catch (error) {
           logger.error(this.TAG, '[TCP] Error during machine lookup:', error)

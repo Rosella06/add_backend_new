@@ -30,10 +30,7 @@ const startServer = async () => {
     socketService.initialize(server)
 
     server.listen(config.port, () => {
-      logger.info(
-        TAG,
-        `Server is running on http://localhost:${config.port}`
-      )
+      logger.info(TAG, `Server is running on http://localhost:${config.port}`)
       logger.info(TAG, 'API, TCP, and Socket.IO are ready.')
     })
 

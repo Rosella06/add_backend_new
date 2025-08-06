@@ -76,11 +76,7 @@ export const pickupNextDrug = async (
     const slotAvailable = slot === 'M01' ? 'right' : 'left'
 
     await orderService.updateOrderStatus(id, 'pickup')
-    await pickupService.initiatePickup(
-      id,
-      machineId,
-      slotAvailable
-    )
+    await pickupService.initiatePickup(id, machineId, slotAvailable)
 
     res.status(200).json({
       success: true,
@@ -101,10 +97,7 @@ export const deleteAllOrderAndQueue = async (
     const { machineId } = req.body
 
     if (!machineId) {
-      throw new HttpError(
-        404,
-        `Machine id is missing.`
-      )
+      throw new HttpError(404, `Machine id is missing.`)
     }
 
     const deleteResult = await orderService.deleteAllOrder(machineId)

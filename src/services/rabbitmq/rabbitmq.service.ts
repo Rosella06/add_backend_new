@@ -37,10 +37,7 @@ class RabbitMQService {
       })
 
       this.connectionManager.on('close', () => {
-        logger.error(
-          this.TAG,
-          'RabbitMQ connection closed! Re-initializing...'
-        )
+        logger.error(this.TAG, 'RabbitMQ connection closed! Re-initializing...')
         this.isInitialized = false
         this.connectionManager = null
         this.channel = null

@@ -8,4 +8,5 @@ export const SystemEvents = {
 
 export default systemEventEmitter
 
-export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+export const delay = (ms: number) =>
+  new Promise(resolve => setTimeout(resolve, ms))

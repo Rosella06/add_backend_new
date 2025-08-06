@@ -14,7 +14,7 @@ const RETRY_DLX = 'retry_dlx'
 const ERROR_DLX = 'error_dlx'
 const RETRY_DELAY = 5000
 
-export async function setupRabbitMQConsumers() {
+export async function setupRabbitMQConsumers () {
   const channel = rabbitService.getChannel()
   const allMachines = await prisma.machines.findMany({
     where: { status: 'online' }
@@ -51,7 +51,8 @@ export async function setupRabbitMQConsumers() {
     await channel.bindQueue(mainQueueName, MAIN_EXCHANGE, machineId)
 
     await channel.prefetch(1)
-    logger.info(TAG,
+    logger.info(
+      TAG,
       `[Consumer Setup] Machine [${machineId}]: Consumer ready for queue '${mainQueueName}'.`
     )
 
@@ -61,7 +62,8 @@ export async function setupRabbitMQConsumers() {
         if (!msg) return
 
         const order = JSON.parse(msg.content.toString())
-        logger.debug(TAG,
+        logger.debug(
+          TAG,
           `[Consumer for ${machineId}] Received job for order: ${order.orderId}`
         )
 
@@ -86,26 +88,32 @@ export async function setupRabbitMQConsumers() {
               slot: slotIdentifier
             })
             channel.ack(msg)
-            logger.debug(TAG,
+            logger.debug(
+              TAG,
               `[Consumer for ${machineId}] Job for order ${order.orderId} completed and acknowledged.`
             )
-            logger.debug(TAG, `   -> Applying 500ms cooldown period before next job.`);
+            logger.debug(
+              TAG,
+              `   -> Applying 500ms cooldown period before next job.`
+            )
             await delay(500)
           } else {
             throw new Error('PLC failed to dispense (non-92 response).')
           }
         } catch (error) {
           const errorMessage = (error as Error).message
-          logger.error(TAG,
+          logger.error(
+            TAG,
             `[Consumer for ${machineId}] Failed job for order ${order.orderId}: ${errorMessage}`
           )
 
           if (
             errorMessage.includes('Tray is full') ||
             errorMessage.includes('Socket not connected') ||
-            errorMessage.includes("Timeout waiting for response")
+            errorMessage.includes('Timeout waiting for response')
           ) {
-            logger.warn(TAG,
+            logger.warn(
+              TAG,
               `   -> Sending to retry queue for ${RETRY_DELAY / 1000}s.`
             )
             channel.publish(RETRY_DLX, machineId, msg.content, {
