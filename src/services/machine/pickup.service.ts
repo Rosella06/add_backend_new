@@ -39,7 +39,7 @@ class PickupService {
     }
 
     this.busySlots.add(slotIdentifier)
-    logger.info(
+    logger.debug(
       TAG,
       `Slot '${slot}' on machine ${machineId} is now BUSY for pickup.`
     )

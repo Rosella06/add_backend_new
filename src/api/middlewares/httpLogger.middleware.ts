@@ -56,7 +56,7 @@ morgan.token('colored-status', (req: Request, res: Response) => {
 })
 
 const stream: StreamOptions = {
-  write: message => logger.debug(TAG, message.trim())
+  write: message => logger.info(TAG, message.trim())
 }
 
 const morganFormat = ':colored-method :url :colored-status - :response-time ms'

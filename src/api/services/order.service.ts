@@ -191,7 +191,7 @@ export async function deleteAllOrder (machineId: string): Promise<string> {
   })
 
   const message = `Successfully cleared ${deleteResult.count} prescription(s) and their associated orders for machine ${machineId}.`
-  logger.info(TAG, message)
+  logger.debug(TAG, message)
 
   return message
 }

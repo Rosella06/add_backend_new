@@ -109,7 +109,7 @@ class PlcService {
         if (responseTransition === expectedTransition) {
           clearTimeout(timeoutId)
           socket.removeListener('data', onData)
-          logger.info(
+          logger.debug(
             TAG,
             `Matched response for N=${expectedTransition}: ${response}`
           )
@@ -123,7 +123,7 @@ class PlcService {
       }
 
       socket.on('data', onData)
-      logger.info(
+      logger.debug(
         TAG,
         `Sending command, waiting for N=${expectedTransition}: ${commandString}`
       )
@@ -179,14 +179,14 @@ class PlcService {
 
           if (responseCode === '91' && !got91) {
             got91 = true
-            logger.info(
+            logger.debug(
               TAG,
               `PLC acknowledged command (T91) for N=${transition}. Waiting for completion...`
             )
           } else if (responseCode === '92' && got91) {
             clearTimeout(timeoutId)
             socket.removeListener('data', onData)
-            logger.info(
+            logger.debug(
               TAG,
               `PLC confirmed dispense success (T92) for N=${transition}.`
             )
@@ -204,7 +204,7 @@ class PlcService {
 
         socket.on('data', onData)
         socket.write(commandString)
-        logger.info(
+        logger.debug(
           TAG,
           `Sending dispense command, waiting for N=${transition}: ${commandString}`
         )
