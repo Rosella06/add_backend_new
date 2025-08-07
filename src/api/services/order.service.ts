@@ -128,7 +128,7 @@ export async function createPrescriptionFromPharmacy (
 
 export async function findNextOrderToPickup (orderId: string) {
   return prisma.orders.findFirst({
-    where: { id: orderId, status: 'dispensed' },
+    where: { id: orderId, status: { in: ['dispensed', 'error'] } },
     orderBy: { createdAt: 'asc' },
     include: { drug: true }
   })
