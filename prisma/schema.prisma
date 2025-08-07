@@ -104,6 +104,17 @@ model Users {
   prescription Prescription[]
 }
 
+model SystemErrors {
+  id           String   @id @default(uuid())
+  queueName    String
+  errorMessage String   @db.Text
+  stackTrace   String?  @db.Text
+  payload      Json
+  resolved     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 enum Role {
   ADMIN
   USER

@@ -1,6 +1,7 @@
 import * as amqplib from 'amqplib'
 import { config } from '../../config'
 import { logger } from '../../utils/logger'
+import { setupErrorConsumers } from './errorConsumer.setup'
 
 class RabbitMQService {
   private connectionManager: amqplib.ChannelModel | null = null
@@ -41,6 +42,7 @@ class RabbitMQService {
 
       const { setupRabbitMQConsumers } = await import('./consumer.setup')
       await setupRabbitMQConsumers()
+      await setupErrorConsumers()
 
       this.connectionManager.on('error', (err: Error) => {
         logger.error(this.TAG, `RabbitMQ connection error: ${err.message}`)

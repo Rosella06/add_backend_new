@@ -34,7 +34,7 @@ const startServer = async () => {
       logger.info(TAG, 'API, TCP, and Socket.IO are ready.')
     })
 
-    rabbitService.init()
+    await rabbitService.init()
   } catch (error) {
     logger.error(
       TAG,
