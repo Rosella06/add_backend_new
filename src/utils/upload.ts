@@ -94,12 +94,31 @@ const selectPath = (path: string): string => {
   return pathname
 }
 
-const deleteImagePath = (dirpath: string, imagePath: string) => {
+const deleteImagePath = (category: string, filename: string) => {
+  if (!filename) {
+    logger.warn(
+      TAG,
+      'Attempted to delete an image with an empty filename. Skipping.'
+    )
+    return
+  }
+
   try {
-    fs.unlinkSync(path.join(dirpath, imagePath))
-    logger.info(TAG, `This image: [${imagePath}] has been deleted.`)
+    const dirPath = selectPath(category)
+
+    const fullImagePath = path.join(dirPath, filename)
+
+    if (fs.existsSync(fullImagePath)) {
+      fs.unlinkSync(fullImagePath)
+      logger.info(TAG, `Image file has been deleted: ${fullImagePath}`)
+    } else {
+      logger.warn(
+        TAG,
+        `Attempted to delete a non-existent file: ${fullImagePath}`
+      )
+    }
   } catch (error) {
-    logger.error(TAG, `Failed to delete file: [${imagePath}].`)
+    logger.error(TAG, `Failed to delete file: ${filename}.`, error)
   }
 }
 

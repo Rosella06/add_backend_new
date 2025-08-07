@@ -10,16 +10,27 @@ export const globalErrorHandler = (
   res: Response,
   _next: NextFunction
 ) => {
+  let statusCode = 500
+  let message = ''
+
   if (err instanceof HttpError) {
-    return res.status(err.statusCode).json({
-      success: false,
-      message: err.message
-    })
+    statusCode = err.statusCode
   }
 
-  logger.error(TAG, 'Unhandled Error:', err)
-  return res.status(500).json({
+  if (err instanceof Error) {
+    logger.error(TAG, `${err.name}: ${err.message}`)
+    message = err.message
+  } else {
+    logger.error(TAG, 'An unknown error occurred')
+    message = `An unknown error occurred, ${String(err)}`
+  }
+  res.status(statusCode).send({
+    message,
     success: false,
-    message: 'Internal Server Error'
+    data: null,
+    traceStack:
+      process.env.NODE_ENV === 'development' && err instanceof Error
+        ? err.stack
+        : undefined
   })
 }

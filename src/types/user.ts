@@ -1,6 +1,6 @@
-import { Role } from "@prisma/client"
+import { Role } from '@prisma/client'
 
-interface LoginResponse {
+type LoginResponse = {
   token: string
   id: string
   userRole: string
@@ -9,11 +9,11 @@ interface LoginResponse {
   userImage: string | null
 }
 
-interface PinCodeResponse {
+type PinCodeResponse = {
   pinCode: string | null
 }
 
-interface CreateUserResponse {
+type CreateUserResponse = {
   id: string
   userName: string
   displayName: string

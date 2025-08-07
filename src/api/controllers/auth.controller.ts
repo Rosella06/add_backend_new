@@ -36,7 +36,7 @@ export const userLogin = async (
         success: true,
         data: result
       })
-    } else if ('username' in validatedBody) {
+    } else if ('userName' in validatedBody) {
       const result = await userLoginWithUsernameService(
         validatedBody.userName,
         validatedBody.userPassword
@@ -68,7 +68,7 @@ export const generateUserQrCode = async (
 ) => {
   try {
     const validatedBody: GenerateRequestBody = GenerateQrCodeSchema.parse(
-      req.body
+      req.params
     )
 
     const result = await generateUserQrCodeService(validatedBody.id)
@@ -150,7 +150,7 @@ export const createUser = async (
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      if (req.file) deleteImagePath('public/images/users', req.file.filename)
+      if (req.file) deleteImagePath('users', req.file.filename)
 
       return res.status(400).json({
         success: false,

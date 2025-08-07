@@ -6,7 +6,9 @@ import CryptoJS from 'crypto-js'
 import { CreateUserResponse, PinCodeResponse } from '../../types/user'
 import { CreateUserRequestBody } from '../../validators/auth.validator'
 import { deleteImagePath } from '../../utils/upload'
-import { hashPasswordCompare } from '../../utils/hash'
+import { hashPassword, hashPasswordCompare } from '../../utils/hash'
+import { v4 as uuidv4 } from 'uuid'
+import { getDateFormat } from '../../utils/date.format'
 
 const TAG = 'AUTH SERVICE'
 
@@ -122,7 +124,8 @@ export const generateUserQrCodeService = async (
     })
 
     if (!findUser) throw new HttpError(404, 'User not found.')
-    if (!findUser.pinCode) throw new HttpError(403, 'Pincode is not registered.')
+    if (!findUser.pinCode)
+      throw new HttpError(403, 'Pincode is not registered.')
 
     return { pinCode: findUser.pinCode }
   } catch (error) {
@@ -161,14 +164,44 @@ export const createUserService = async (
   userData: CreateUserRequestBody,
   imageFile: Express.Multer.File
 ): Promise<CreateUserResponse> => {
-  const { userName, password, displayName, userRole } = userData
+  try {
+    const { userName, userPassword, displayName, userRole } = userData
 
-  const findUser = await prisma.users.findUnique({
-    where: { userName }
-  })
+    const findUser = await prisma.users.findUnique({
+      where: { userName }
+    })
 
-  if (findUser) {
-    deleteImagePath('public/images/users', imageFile.filename)
-    throw new HttpError(409, 'This username is already taken.')
+    if (findUser) {
+      deleteImagePath('users', imageFile.filename)
+      throw new HttpError(409, 'This username is already taken.')
+    }
+
+    const UUID = `UID-${uuidv4()}`
+    const result = await prisma.users.create({
+      select: {
+        id: true,
+        userName: true,
+        displayName: true,
+        userImage: true,
+        userRole: true
+      },
+      data: {
+        id: UUID,
+        userName: userName.toLowerCase(),
+        userPassword: await hashPassword(userPassword.toLowerCase()),
+        displayName: displayName,
+        userImage: !imageFile ? null : `/img/users/${imageFile.filename}`,
+        userRole: userRole,
+        userStatus: true,
+        createdAt: getDateFormat(new Date()),
+        updatedAt: getDateFormat(new Date())
+      }
+    })
+    return result
+  } catch (error) {
+    if (imageFile.filename) {
+      deleteImagePath('users', imageFile.filename)
+    }
+    throw error
   }
 }
