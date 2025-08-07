@@ -2,6 +2,10 @@ import { NextFunction, Request, Response } from 'express'
 import * as orderService from '../services/order.service'
 import { pickupService } from '../../services/machine/pickup.service'
 import { HttpError } from '../../types/global'
+import { AuthHeaderSchema } from '../../validators/token.validator'
+import { verify } from 'jsonwebtoken'
+import { logger } from '../../utils/logger'
+import { UserJwtPayload } from '../../types/order'
 
 export const getOrderDispense = async (
   req: Request,
@@ -9,9 +13,13 @@ export const getOrderDispense = async (
   next: NextFunction
 ) => {
   try {
-    const results = await orderService.getOrderDispenseService()
+    const authHeader = req.headers.authorization
+    const token = AuthHeaderSchema.parse(authHeader)
+    const decoded = verify(token, String(process.env.JWT_SECRET)) as UserJwtPayload
 
-    res.status(201).json({
+    const results = await orderService.getOrderDispenseService(decoded.id)
+
+    res.status(200).json({
       success: true,
       message: `A list of order dispensing.`,
       data: results
@@ -28,13 +36,18 @@ export const dispenseNewPrescription = async (
 ) => {
   try {
     const { rfid, machineId } = req.body
+    const authHeader = req.headers.authorization
+    const token = AuthHeaderSchema.parse(authHeader)
+    const decoded = verify(token, String(process.env.JWT_SECRET)) as UserJwtPayload
+
     if (!rfid || !machineId) {
       throw new HttpError(400, 'RFID and Machine ID are required.')
     }
 
     const prescription = await orderService.createPrescriptionFromPharmacy(
       rfid,
-      machineId
+      machineId,
+      decoded.id
     )
 
     res.status(201).json({

@@ -38,6 +38,7 @@ model Inventory {
 
 model Prescription {
   id               String   @id @default(uuid())
+  userId           String?  @db.VarChar(200)
   prescriptionNo   String   @unique @db.VarChar(200)
   prescriptionDate String   @db.VarChar(200)
   hn               String   @db.VarChar(20)
@@ -51,6 +52,7 @@ model Prescription {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   orders           Orders[]
+  Users            Users?   @relation(fields: [userId], references: [id])
 }
 
 model Orders {
@@ -88,17 +90,18 @@ model Machines {
 }
 
 model Users {
-  id           String   @id @default(uuid())
-  userName     String   @unique @db.VarChar(155)
-  userPassword String   @db.VarChar(155)
-  pinCode      String?  @db.VarChar(155)
-  displayName  String   @db.VarChar(150)
+  id           String         @id @default(uuid())
+  userName     String         @unique @db.VarChar(155)
+  userPassword String         @db.VarChar(155)
+  pinCode      String?        @db.VarChar(155)
+  displayName  String         @db.VarChar(150)
   userImage    String?
-  userStatus   Boolean  @default(true)
-  userRole     Role     @default(USER)
-  createBy     String?  @db.VarChar(100)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  userStatus   Boolean        @default(true)
+  userRole     Role           @default(USER)
+  createBy     String?        @db.VarChar(100)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  prescription Prescription[]
 }
 
 enum Role {

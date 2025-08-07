@@ -1,4 +1,6 @@
-export interface PharmacyResponse {
+import { Role } from '@prisma/client'
+
+export type PharmacyResponse = {
   RFID: string
   PrescriptionNo: string
   HN: string
@@ -6,7 +8,7 @@ export interface PharmacyResponse {
   Prescription: PharmacyDrugItem[]
 }
 
-export interface PharmacyDrugItem {
+export type PharmacyDrugItem = {
   f_prescriptionno: string
   f_prescriptiondate: string
   f_hn: string
@@ -24,4 +26,13 @@ export interface PharmacyDrugItem {
   command: string
   f_binlocation: string
   RowID: string
+}
+
+export type UserJwtPayload = {
+  id: string
+  userRole: Role
+  displayName: string
+  userStatus: boolean
+  iat: number
+  exp: number
 }

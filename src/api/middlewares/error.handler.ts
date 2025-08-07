@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 import { HttpError } from '../../types/global'
 import { logger } from '../../utils/logger'
 
-const TAG = 'SYSTEM'
+const TAG = 'SYSTEM-ERROR'
 
 export const globalErrorHandler = (
   err: Error,

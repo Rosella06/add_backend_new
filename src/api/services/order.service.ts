@@ -4,12 +4,16 @@ import { rabbitService } from '../../services/rabbitmq/rabbitmq.service'
 import { HttpError } from '../../types/global'
 import { Orders, Prescription } from '@prisma/client'
 import { logger } from '../../utils/logger'
+import { v4 as uuidv4 } from 'uuid'
 
 const EXCHANGE_NAME = 'drug_dispenser_exchange'
 const TAG = 'ORDER-SERVICE'
 
-export async function getOrderDispenseService (): Promise<Prescription[]> {
-  const results = await prisma.prescription.findMany({
+export async function getOrderDispenseService (
+  userId: string
+): Promise<Prescription[]> {
+  const results = await prisma.prescription.findFirst({
+    where: { userId },
     include: {
       orders: {
         orderBy: [{ floor: 'asc' }, { position: 'asc' }]
@@ -20,12 +24,13 @@ export async function getOrderDispenseService (): Promise<Prescription[]> {
     }
   })
 
-  return results
+  return results as unknown as Prescription[]
 }
 
 export async function createPrescriptionFromPharmacy (
   rfid: string,
-  machineId: string
+  machineId: string,
+  userId: string
 ): Promise<Prescription> {
   const pharmacyData = await getPharmacyPrescriptionData(rfid)
 
@@ -39,9 +44,12 @@ export async function createPrescriptionFromPharmacy (
     )
   }
 
+  const PID = `PID-${uuidv4()}`
   const transactionResult = await prisma.$transaction(async tx => {
     const newPrescription = await tx.prescription.create({
       data: {
+        id: PID,
+        userId: userId,
         prescriptionNo: pharmacyData.PrescriptionNo,
         prescriptionDate: '20240520',
         hn: pharmacyData.HN,
@@ -65,8 +73,10 @@ export async function createPrescriptionFromPharmacy (
             `Drug with code ${item.f_orderitemcode} not found in our system.`
           )
         }
+        const OID = `OID-${uuidv4()}`
 
         return {
+          id: OID,
           orderItemName: item.f_orderitemname,
           quantity: item.f_orderqty,
           unitCode: item.f_orderunitcode,
