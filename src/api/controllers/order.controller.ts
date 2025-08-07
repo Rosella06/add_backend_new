@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express'
-import * as orderService from '../../services/order.service'
+import * as orderService from '../services/order.service'
 import { pickupService } from '../../services/machine/pickup.service'
 import { HttpError } from '../../types/global'
 

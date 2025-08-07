@@ -2,7 +2,7 @@ import prisma from '../../config/prisma'
 import { socketService } from '../../utils/socket.service'
 import { tcpService } from '../../utils/tcp.service'
 import { plcService } from '../machine/plc.service'
-import { updateOrderSlot, updateOrderStatus } from '../order.service'
+import { updateOrderSlot, updateOrderStatus } from '../../api/services/order.service'
 import { rabbitService } from './rabbitmq.service'
 import { logger } from '../../utils/logger'
 import { delay } from '../../utils/system.events'
@@ -13,7 +13,7 @@ const TAG = 'CONSUMER-SETUP'
 const MAIN_EXCHANGE = 'drug_dispenser_exchange'
 const RETRY_DLX = 'retry_dlx'
 const ERROR_DLX = 'error_dlx'
-const RETRY_DELAY = 5000
+const RETRY_DELAY = 1500
 
 export async function setupRabbitMQConsumers () {
   const channel = rabbitService.getChannel()

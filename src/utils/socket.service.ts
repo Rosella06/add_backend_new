@@ -24,7 +24,7 @@ class SocketService {
 
   public getIO (): SocketIOServer {
     if (!this.io) {
-      throw new Error('Socket.IO has not been initialized!')
+      throw new Error('Socket.IO has not been initialized.')
     }
     return this.io
   }

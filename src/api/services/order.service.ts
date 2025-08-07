@@ -1,9 +1,9 @@
-import prisma from '../config/prisma'
+import prisma from '../../config/prisma'
 import { getPharmacyPrescriptionData } from './pharmacy.service'
-import { rabbitService } from './rabbitmq/rabbitmq.service'
-import { HttpError } from '../types/global'
+import { rabbitService } from '../../services/rabbitmq/rabbitmq.service'
+import { HttpError } from '../../types/global'
 import { Orders, Prescription } from '@prisma/client'
-import { logger } from '../utils/logger'
+import { logger } from '../../utils/logger'
 
 const EXCHANGE_NAME = 'drug_dispenser_exchange'
 const TAG = 'ORDER-SERVICE'

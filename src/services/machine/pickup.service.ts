@@ -1,5 +1,5 @@
 import { plcService } from './plc.service'
-import { updateOrderStatus } from '../order.service'
+import { updateOrderStatus } from '../../api/services/order.service'
 import { HttpError } from '../../types/global'
 import { tcpService } from '../../utils/tcp.service'
 import { socketService } from '../../utils/socket.service'

@@ -91,7 +91,7 @@ model Users {
   id           String   @id @default(uuid())
   userName     String   @unique @db.VarChar(155)
   userPassword String   @db.VarChar(155)
-  userPincode  String?  @db.VarChar(155)
+  pinCode      String?  @db.VarChar(155)
   displayName  String   @db.VarChar(150)
   userImage    String?
   userStatus   Boolean  @default(true)

@@ -5,3 +5,12 @@ export class HttpError extends Error {
     this.statusCode = statusCode
   }
 }
+
+interface BaseResponse<T = unknown> {
+  message?: string
+  success?: boolean
+  data?: T
+  traceStack?: string
+}
+
+export { BaseResponse }

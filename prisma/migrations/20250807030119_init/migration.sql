@@ -1,8 +1,8 @@
 -- CreateEnum
-CREATE TYPE "public"."Role" AS ENUM ('ADMIN', 'USER', 'HEAD_PHARMACIST', 'PHARMACIST', 'ASSISTANT', 'SUPER');
+CREATE TYPE "Role" AS ENUM ('ADMIN', 'USER', 'HEAD_PHARMACIST', 'PHARMACIST', 'ASSISTANT', 'SUPER');
 
 -- CreateTable
-CREATE TABLE "public"."Drugs" (
+CREATE TABLE "Drugs" (
     "id" TEXT NOT NULL,
     "drugCode" VARCHAR(20) NOT NULL,
     "drugName" VARCHAR(255) NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE "public"."Drugs" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Inventory" (
+CREATE TABLE "Inventory" (
     "id" TEXT NOT NULL,
     "floor" INTEGER NOT NULL,
     "position" INTEGER NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE "public"."Inventory" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Prescription" (
+CREATE TABLE "Prescription" (
     "id" TEXT NOT NULL,
     "prescriptionNo" VARCHAR(200) NOT NULL,
     "prescriptionDate" VARCHAR(200) NOT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE "public"."Prescription" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Orders" (
+CREATE TABLE "Orders" (
     "id" TEXT NOT NULL,
     "orderItemName" VARCHAR(200) NOT NULL,
     "quantity" INTEGER NOT NULL,
@@ -71,7 +71,7 @@ CREATE TABLE "public"."Orders" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Machines" (
+CREATE TABLE "Machines" (
     "id" TEXT NOT NULL,
     "machineName" VARCHAR(200) NOT NULL,
     "status" CHAR(20) NOT NULL DEFAULT 'offline',
@@ -85,15 +85,15 @@ CREATE TABLE "public"."Machines" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Users" (
+CREATE TABLE "Users" (
     "id" TEXT NOT NULL,
     "userName" VARCHAR(155) NOT NULL,
     "userPassword" VARCHAR(155) NOT NULL,
-    "userPincode" VARCHAR(155),
+    "pinCode" VARCHAR(155),
     "displayName" VARCHAR(150) NOT NULL,
     "userImage" TEXT,
     "userStatus" BOOLEAN NOT NULL DEFAULT true,
-    "userRole" "public"."Role" NOT NULL DEFAULT 'USER',
+    "userRole" "Role" NOT NULL DEFAULT 'USER',
     "createBy" VARCHAR(100),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -102,34 +102,34 @@ CREATE TABLE "public"."Users" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Drugs_drugCode_key" ON "public"."Drugs"("drugCode");
+CREATE UNIQUE INDEX "Drugs_drugCode_key" ON "Drugs"("drugCode");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Inventory_floor_position_key" ON "public"."Inventory"("floor", "position");
+CREATE UNIQUE INDEX "Inventory_floor_position_key" ON "Inventory"("floor", "position");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Prescription_prescriptionNo_key" ON "public"."Prescription"("prescriptionNo");
+CREATE UNIQUE INDEX "Prescription_prescriptionNo_key" ON "Prescription"("prescriptionNo");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Orders_id_key" ON "public"."Orders"("id");
+CREATE UNIQUE INDEX "Orders_id_key" ON "Orders"("id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Orders_prescriptionId_drugId_key" ON "public"."Orders"("prescriptionId", "drugId");
+CREATE UNIQUE INDEX "Orders_prescriptionId_drugId_key" ON "Orders"("prescriptionId", "drugId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Machines_ipAddress_key" ON "public"."Machines"("ipAddress");
+CREATE UNIQUE INDEX "Machines_ipAddress_key" ON "Machines"("ipAddress");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Users_userName_key" ON "public"."Users"("userName");
+CREATE UNIQUE INDEX "Users_userName_key" ON "Users"("userName");
 
 -- AddForeignKey
-ALTER TABLE "public"."Inventory" ADD CONSTRAINT "Inventory_drugId_fkey" FOREIGN KEY ("drugId") REFERENCES "public"."Drugs"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Inventory" ADD CONSTRAINT "Inventory_drugId_fkey" FOREIGN KEY ("drugId") REFERENCES "Drugs"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Orders" ADD CONSTRAINT "Orders_prescriptionId_fkey" FOREIGN KEY ("prescriptionId") REFERENCES "public"."Prescription"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Orders" ADD CONSTRAINT "Orders_prescriptionId_fkey" FOREIGN KEY ("prescriptionId") REFERENCES "Prescription"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Orders" ADD CONSTRAINT "Orders_drugId_fkey" FOREIGN KEY ("drugId") REFERENCES "public"."Drugs"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Orders" ADD CONSTRAINT "Orders_drugId_fkey" FOREIGN KEY ("drugId") REFERENCES "Drugs"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Orders" ADD CONSTRAINT "Orders_machineId_fkey" FOREIGN KEY ("machineId") REFERENCES "public"."Machines"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Orders" ADD CONSTRAINT "Orders_machineId_fkey" FOREIGN KEY ("machineId") REFERENCES "Machines"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

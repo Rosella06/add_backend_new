@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 
-function getProjectName (): string {
+const PROJECT_NAME = (() => {
   try {
     const packageJsonPath = path.join(process.cwd(), 'package.json')
     const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8')
@@ -9,8 +9,8 @@ function getProjectName (): string {
   } catch {
     return 'unknown-app'
   }
-}
-const PROJECT_NAME = getProjectName()
+})()
+
 const BRIGHT = '\x1b[1m'
 const colors = {
   reset: '\x1b[0m',
@@ -32,6 +32,7 @@ const colors = {
     blue: '\x1b[44m'
   }
 }
+
 const TAG_COLOR_PALETTE = [
   colors.fg.cyan,
   colors.fg.magenta,
@@ -39,6 +40,7 @@ const TAG_COLOR_PALETTE = [
   colors.fg.yellow,
   colors.fg.green
 ]
+
 const PREDEFINED_TAG_COLORS = new Map<string, string>([
   ['TCP', colors.fg.cyan],
   ['SOCKET', colors.fg.blue],
@@ -46,8 +48,19 @@ const PREDEFINED_TAG_COLORS = new Map<string, string>([
   ['SERVER', colors.fg.magenta],
   ['PLCService', colors.fg.cyan],
   ['PickupService', colors.fg.blue],
-  ['OrderService', colors.fg.yellow]
+  ['OrderService', colors.fg.yellow],
+  ['Bootstrap', colors.fg.green]
 ])
+
+export enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARN = 2,
+  ERROR = 3
+}
+const CURRENT_LOG_LEVEL: LogLevel =
+  LogLevel[process.env.LOG_LEVEL as keyof typeof LogLevel] ?? LogLevel.INFO
+
 function getColorForTag (tag: string): string {
   const baseTag = tag.split('-')[0].split(' ')[0]
   if (PREDEFINED_TAG_COLORS.has(baseTag)) {
@@ -61,14 +74,7 @@ function getColorForTag (tag: string): string {
   const colorIndex = Math.abs(hash % TAG_COLOR_PALETTE.length)
   return TAG_COLOR_PALETTE[colorIndex]
 }
-export enum LogLevel {
-  DEBUG = 0,
-  INFO = 1,
-  WARN = 2,
-  ERROR = 3
-}
-const CURRENT_LOG_LEVEL: LogLevel =
-  LogLevel[process.env.LOG_LEVEL as keyof typeof LogLevel] ?? LogLevel.INFO
+
 function getTimestamp (): string {
   const now = new Date()
   const year = now.getFullYear()
@@ -78,9 +84,7 @@ function getTimestamp (): string {
   const milliseconds = now.getMilliseconds().toString().padStart(3, '0')
   return `${year}-${month}-${day} ${time}.${milliseconds}`
 }
-function formatColumn (text: string, length: number): string {
-  return text.padEnd(length, ' ')
-}
+
 const stripAnsi = (str: string) =>
   str.replace(
     /[\u001b\u009b][[()#;?]*.?[0-9]*[;:]*.?[0-9]*[;:]*.?[0-9]*;?[0-9]*[a-zA-Z]/g,
@@ -90,6 +94,15 @@ const stripAnsi = (str: string) =>
 class Logger {
   private pid: string = process.pid.toString()
   private projectName: string = PROJECT_NAME
+  private maxTagLength: number = 15
+
+  private formatTag (tag: string): string {
+    const fullTag = `[${tag}]`
+    if (fullTag.length > this.maxTagLength) {
+      this.maxTagLength = fullTag.length
+    }
+    return fullTag.padEnd(this.maxTagLength, ' ')
+  }
 
   private log (
     level: LogLevel,
@@ -102,19 +115,16 @@ class Logger {
   ): void {
     if (CURRENT_LOG_LEVEL <= level) {
       const timestamp = getTimestamp()
-      const pidTid = `${this.pid}-${this.pid}`
-      const tagColor = getColorForTag(tag)
-      const coloredTag = `${tagColor}${formatColumn(`[${tag}]`, 20)}${
-        colors.reset
-      }`
-      const formattedProjectName = formatColumn(this.projectName, 25)
+      const pidTid = `${this.pid}-${this.pid}`.padEnd(10, ' ')
+      const plainTag = this.formatTag(tag)
+      const projectNameColumn = this.projectName.padEnd(25, ' ')
       const levelIndicator = `${levelBgColor}${levelFgColor}${colors.bright} ${levelChar} ${colors.reset}`
 
-      const prefix = `${timestamp} ${formatColumn(
-        pidTid,
-        12
-      )} ${coloredTag} ${formattedProjectName} ${levelIndicator} `
-      const indentation = ' '.repeat(stripAnsi(prefix).length)
+      const plainPrefix = `${timestamp} ${pidTid} ${plainTag} ${projectNameColumn} ${levelIndicator} `
+      const indentation = ' '.repeat(stripAnsi(plainPrefix).length + 1)
+
+      const coloredTag = `${getColorForTag(tag)}${plainTag}${colors.reset}`
+      const coloredPrefix = `${timestamp} ${pidTid} ${coloredTag} ${projectNameColumn} ${levelIndicator} `
 
       const fullMessage = [
         message,
@@ -124,7 +134,6 @@ class Logger {
 
       const terminalWidth = process.stdout.columns || 120
       const messageMaxWidth = terminalWidth - indentation.length
-
       const wrappedMessage = fullMessage.replace(
         new RegExp(
           `(?![^\\n]{1,${messageMaxWidth}}$)([^\\n]{1,${messageMaxWidth}})\\s`,
@@ -135,25 +144,22 @@ class Logger {
 
       let coloredWrappedMessage = wrappedMessage
       if (level === LogLevel.WARN) {
-        coloredWrappedMessage = colors.fg.yellow + wrappedMessage + colors.reset
+        coloredWrappedMessage = colors.fg.yellow + wrappedMessage
       } else if (level === LogLevel.ERROR) {
-        coloredWrappedMessage = colors.fg.red + wrappedMessage + colors.reset
+        coloredWrappedMessage = colors.fg.red + wrappedMessage
       }
 
-      console.log(prefix + coloredWrappedMessage)
+      console.log(coloredPrefix + coloredWrappedMessage + colors.reset)
 
       if (otherArgs.length > 0) {
         otherArgs.forEach(arg => {
           if (arg instanceof Error && arg.stack) {
             const stack = arg.stack
               .split('\n')
-              .map((line, index) => {
-                const coloredLine =
-                  level === LogLevel.ERROR
-                    ? colors.fg.red + line + colors.reset
-                    : colors.fg.yellow + line + colors.reset
-                return `${indentation}${coloredLine}`
-              })
+              .slice(1)
+              .map(
+                line => `${indentation}${colors.fg.red}${line}${colors.reset}`
+              )
               .join('\n')
             console.log(stack)
           } else {
@@ -209,16 +215,25 @@ class Logger {
     )
   }
 
-  public separator (message: string): void {
-    const terminalWidth = process.stdout.columns || 80
-    const messageText = ` PROCESS ${message.toUpperCase()} `
-    const lineLength = Math.max(
-      5,
-      Math.floor((terminalWidth - messageText.length) / 2)
-    )
-    const line = '-'.repeat(lineLength)
-    const separatorLine = `${colors.fg.white}${line}${messageText}${line}${colors.reset}`
-    console.log(separatorLine)
+  public separator (message: string, isSync: boolean = false): void {
+    try {
+      const terminalWidth = process.stdout.columns || 80
+      const messageText = ` PROCESS ${message.toUpperCase()} `
+      const lineLength = Math.max(
+        5,
+        Math.floor((terminalWidth - messageText.length) / 2)
+      )
+      const line = '-'.repeat(lineLength)
+      const separatorLine = `${colors.fg.white}${line}${messageText}${line}${colors.reset}\n`
+
+      if (isSync) {
+        fs.writeSync(process.stdout.fd, separatorLine)
+      } else {
+        console.log(separatorLine.trim())
+      }
+    } catch (error) {
+      console.log(`--- ${message} ---`)
+    }
   }
 }
 

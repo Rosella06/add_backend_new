@@ -27,7 +27,8 @@
     "socket.io": "^4.8.1",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^11.1.0",
-    "yaml": "^2.8.0"
+    "yaml": "^2.8.0",
+    "zod": "^4.0.15"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.7",

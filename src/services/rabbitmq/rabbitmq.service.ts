@@ -9,9 +9,13 @@ class RabbitMQService {
   private isConnecting = false
   private readonly retryDelay = 5000
   private TAG = 'RabbitMQ'
+  private retryAttempts = 0
+  private readonly maxRetries = 5
+  private readonly longRetryDelay = 30 * 60 * 1000
+  private isWaitingForLongRetry = false
 
   public async init (): Promise<void> {
-    if (this.isInitialized || this.isConnecting) {
+    if (this.isInitialized || this.isConnecting || this.isWaitingForLongRetry) {
       return
     }
 
@@ -27,7 +31,13 @@ class RabbitMQService {
       this.channel = await this.connectionManager.createChannel()
       this.isInitialized = true
       this.isConnecting = false
-      logger.info(this.TAG, 'RabbitMQ Service initialized')
+
+      logger.info(
+        this.TAG,
+        'RabbitMQ Service initialized successfully. Resetting all counters.'
+      )
+      this.retryAttempts = 0
+      this.isWaitingForLongRetry = false
 
       const { setupRabbitMQConsumers } = await import('./consumer.setup')
       await setupRabbitMQConsumers()
@@ -37,22 +47,63 @@ class RabbitMQService {
       })
 
       this.connectionManager.on('close', () => {
-        logger.error(this.TAG, 'RabbitMQ connection closed! Re-initializing...')
-        this.isInitialized = false
-        this.connectionManager = null
-        this.channel = null
-        setTimeout(() => this.init(), this.retryDelay)
+        logger.error(
+          this.TAG,
+          'RabbitMQ connection closed! Attempting to re-initialize...'
+        )
+        this.handleDisconnection()
       })
     } catch (err: any) {
-      this.isConnecting = false
+      this.handleDisconnection(err)
+    }
+  }
+
+  private handleDisconnection (error?: any): void {
+    if (this.isWaitingForLongRetry) {
+      return
+    }
+
+    this.isInitialized = false
+    this.isConnecting = false
+    this.connectionManager = null
+    this.channel = null
+
+    if (error) {
       logger.error(
         this.TAG,
-        `Failed to initialize RabbitMQ (${err.code}). Retrying in ${
-          this.retryDelay / 1000
-        } seconds...`
+        `Failed to initialize RabbitMQ (${error.code || 'Unknown Error'}).`
+      )
+    }
+
+    if (this.retryAttempts < this.maxRetries) {
+      this.retryAttempts++
+      logger.info(
+        this.TAG,
+        `Retrying in ${this.retryDelay / 1000} seconds... (Attempt ${
+          this.retryAttempts
+        }/${this.maxRetries})`
+      )
+      setTimeout(() => this.init(), this.retryDelay)
+    } else {
+      this.isWaitingForLongRetry = true
+      const longDelayMinutes = this.longRetryDelay / (60 * 1000)
+      logger.error(
+        this.TAG,
+        `Failed to connect after ${this.maxRetries} attempts. Will try again in ${longDelayMinutes} minutes.`
       )
 
-      setTimeout(() => this.init(), this.retryDelay)
+      setTimeout(() => {
+        logger.info(
+          this.TAG,
+          `Waking up after ${longDelayMinutes} minutes. Restarting connection process.`
+        )
+
+        this.isWaitingForLongRetry = false
+        this.retryAttempts = 0
+        this.init()
+      }, this.longRetryDelay)
+      // พิจารณาปิดแอปพลิเคชันในกรณีนี้ เพราะ Service สำคัญไม่สามารถทำงานได้
+      // process.exit(1);
     }
   }
 
