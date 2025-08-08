@@ -1,5 +1,5 @@
 import path from 'node:path'
-import fs from 'node:fs'
+import { promises as fsPromises, existsSync, mkdirSync } from 'fs'
 import { Request } from 'express'
 import { v4 as uuidv4 } from 'uuid'
 import multer, {
@@ -23,7 +23,7 @@ const storage: StorageEngine = diskStorage({
     callback: DestinationCallback
   ): void => {
     let pathname: string = selectPath(req.originalUrl.split('/')[2])
-    if (!fs.existsSync(pathname)) fs.mkdirSync(pathname, { recursive: true })
+    if (!existsSync(pathname)) mkdirSync(pathname, { recursive: true })
     callback(null, path.join(pathname))
   },
   filename: (
@@ -94,31 +94,36 @@ const selectPath = (path: string): string => {
   return pathname
 }
 
-const deleteImagePath = (category: string, filename: string) => {
+async function deleteImagePath (
+  category: string,
+  filename: string
+): Promise<void> {
   if (!filename) {
     logger.warn(
       TAG,
       'Attempted to delete an image with an empty filename. Skipping.'
     )
-    return
+    return Promise.resolve()
   }
 
   try {
     const dirPath = selectPath(category)
-
     const fullImagePath = path.join(dirPath, filename)
+    await fsPromises.unlink(fullImagePath)
 
-    if (fs.existsSync(fullImagePath)) {
-      fs.unlinkSync(fullImagePath)
-      logger.info(TAG, `Image file has been deleted: ${fullImagePath}`)
-    } else {
+    logger.info(
+      TAG,
+      `Image file has been deleted successfully: ${fullImagePath}`
+    )
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
       logger.warn(
         TAG,
-        `Attempted to delete a non-existent file: ${fullImagePath}`
+        `Attempted to delete a non-existent file, which is acceptable: ${filename}`
       )
+    } else {
+      logger.error(TAG, `Failed to delete file '${filename}'.`, error)
     }
-  } catch (error) {
-    logger.error(TAG, `Failed to delete file: ${filename}.`, error)
   }
 }
 

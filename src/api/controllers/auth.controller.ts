@@ -150,7 +150,7 @@ export const createUser = async (
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      if (req.file) deleteImagePath('users', req.file.filename)
+      if (req.file) await deleteImagePath('users', req.file.filename)
 
       return res.status(400).json({
         success: false,

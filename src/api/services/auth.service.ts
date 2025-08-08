@@ -172,7 +172,7 @@ export const createUserService = async (
     })
 
     if (findUser) {
-      deleteImagePath('users', imageFile.filename)
+      await deleteImagePath('users', imageFile.filename)
       throw new HttpError(409, 'This username is already taken.')
     }
 
@@ -200,7 +200,7 @@ export const createUserService = async (
     return result
   } catch (error) {
     if (imageFile.filename) {
-      deleteImagePath('users', imageFile.filename)
+      await deleteImagePath('users', imageFile.filename)
     }
     throw error
   }
