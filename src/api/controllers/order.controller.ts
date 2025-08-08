@@ -4,8 +4,13 @@ import { pickupService } from '../../services/machine/pickup.service'
 import { HttpError } from '../../types/global'
 import { AuthHeaderSchema } from '../../validators/token.validator'
 import { verify } from 'jsonwebtoken'
-import { logger } from '../../utils/logger'
 import { UserJwtPayload } from '../../types/order'
+import {
+  DispenseOrderRequestBody,
+  DispenseOrderSchema,
+  PickupNextDrugRequestBody,
+  PickupNextDrugSchema
+} from '../../validators/order.validator'
 
 export const getOrderDispense = async (
   req: Request,
@@ -15,7 +20,10 @@ export const getOrderDispense = async (
   try {
     const authHeader = req.headers.authorization
     const token = AuthHeaderSchema.parse(authHeader)
-    const decoded = verify(token, String(process.env.JWT_SECRET)) as UserJwtPayload
+    const decoded = verify(
+      token,
+      String(process.env.JWT_SECRET)
+    ) as UserJwtPayload
 
     const results = await orderService.getOrderDispenseService(decoded.id)
 
@@ -35,18 +43,23 @@ export const dispenseNewPrescription = async (
   next: NextFunction
 ) => {
   try {
-    const { rfid, machineId } = req.body
+    const validatedBody: DispenseOrderRequestBody = DispenseOrderSchema.parse(
+      req.body
+    )
     const authHeader = req.headers.authorization
     const token = AuthHeaderSchema.parse(authHeader)
-    const decoded = verify(token, String(process.env.JWT_SECRET)) as UserJwtPayload
+    const decoded = verify(
+      token,
+      String(process.env.JWT_SECRET)
+    ) as UserJwtPayload
 
-    if (!rfid || !machineId) {
+    if (!validatedBody.rfid || !validatedBody.machineId) {
       throw new HttpError(400, 'RFID and Machine ID are required.')
     }
 
     const prescription = await orderService.createPrescriptionFromPharmacy(
-      rfid,
-      machineId,
+      validatedBody.rfid,
+      validatedBody.machineId,
       decoded.id
     )
 
@@ -66,9 +79,13 @@ export const pickupNextDrug = async (
   next: NextFunction
 ) => {
   try {
-    const { orderId } = req.params
-
-    const orderToPickup = await orderService.findNextOrderToPickup(orderId)
+    const validatedBody: PickupNextDrugRequestBody = PickupNextDrugSchema.parse(
+      req.params
+    )
+    const orderToPickup = await orderService.findNextOrderToPickup(
+      validatedBody.orderId,
+      validatedBody.drugId
+    )
 
     if (!orderToPickup) {
       return res.status(404).json({
@@ -82,7 +99,7 @@ export const pickupNextDrug = async (
     if (!machineId || !slot) {
       throw new HttpError(
         500,
-        `Order ${orderId} is missing machineId or slot information.`
+        `Order ${validatedBody.orderId} is missing machineId or slot information.`
       )
     }
 
@@ -107,13 +124,15 @@ export const deleteAllOrderAndQueue = async (
   next: NextFunction
 ) => {
   try {
-    const { machineId } = req.body
+    const validatedBody: DispenseOrderRequestBody = DispenseOrderSchema.parse(
+      req.body
+    )
 
-    if (!machineId) {
+    if (!validatedBody.machineId) {
       throw new HttpError(404, `Machine id is missing.`)
     }
 
-    const deleteResult = await orderService.deleteAllOrder(machineId)
+    const deleteResult = await orderService.deleteAllOrder(validatedBody.machineId)
 
     res.status(200).json({
       success: true,

@@ -37,10 +37,23 @@ export async function createPrescriptionFromPharmacy (
   const existingPrescription = await prisma.prescription.findUnique({
     where: { prescriptionNo: pharmacyData.PrescriptionNo }
   })
+
   if (existingPrescription) {
     throw new HttpError(
       409,
       `Prescription ${pharmacyData.PrescriptionNo} already exists.`
+    )
+  }
+
+  if (!rabbitService.isReady()) {
+    logger.error(
+      TAG,
+      'RabbitMQ is not connected. Aborting prescription creation.'
+    )
+
+    throw new HttpError(
+      503,
+      'Message queue service is currently unavailable. Please try again later.'
     )
   }
 
@@ -107,15 +120,38 @@ export async function createPrescriptionFromPharmacy (
     return { prescription: newPrescription, orders: createdOrders }
   })
 
-  for (const order of transactionResult.orders) {
-    const message = {
-      orderId: order.id,
-      machineId: order.machineId,
-      floor: order.floor,
-      position: order.position,
-      quantity: order.quantity
+  try {
+    logger.info(
+      TAG,
+      `Transaction successful. Publishing ${transactionResult.orders.length} orders to RabbitMQ...`
+    )
+    for (const order of transactionResult.orders) {
+      const message = {
+        orderId: order.id,
+        machineId: order.machineId,
+        floor: order.floor,
+        position: order.position,
+        quantity: order.quantity
+      }
+
+      rabbitService.publishToExchange(EXCHANGE_NAME, order.machineId, message)
     }
-    rabbitService.publishToExchange(EXCHANGE_NAME, order.machineId, message)
+    logger.info(TAG, 'All orders published successfully.')
+  } catch (publishError) {
+    logger.error(
+      TAG,
+      `CRITICAL: DB transaction was committed, but failed to publish messages to RabbitMQ! Manual intervention required for Prescription ID: ${transactionResult.prescription.id}`,
+      publishError
+    )
+
+    await prisma.prescription.delete({
+      where: { id: transactionResult.prescription.id }
+    })
+
+    throw new HttpError(
+      500,
+      'Failed to queue the order after saving. The operation has been rolled back.'
+    )
   }
 
   const finalOrder = {
@@ -126,9 +162,13 @@ export async function createPrescriptionFromPharmacy (
   return finalOrder
 }
 
-export async function findNextOrderToPickup (orderId: string) {
+export async function findNextOrderToPickup (orderId: string, drugId: string) {
   return prisma.orders.findFirst({
-    where: { id: orderId, status: { in: ['dispensed', 'error'] } },
+    where: {
+      id: orderId,
+      drugId: drugId,
+      status: { in: ['dispensed', 'error'] }
+    },
     orderBy: { createdAt: 'asc' },
     include: { drug: true }
   })

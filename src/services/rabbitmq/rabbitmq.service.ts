@@ -1,7 +1,6 @@
 import * as amqplib from 'amqplib'
 import { config } from '../../config'
 import { logger } from '../../utils/logger'
-import { setupErrorConsumers } from './errorConsumer.setup'
 
 class RabbitMQService {
   private connectionManager: amqplib.ChannelModel | null = null
@@ -40,8 +39,9 @@ class RabbitMQService {
       this.retryAttempts = 0
       this.isWaitingForLongRetry = false
 
-      const { setupRabbitMQConsumers } = await import('./consumer.setup')
-      await setupRabbitMQConsumers()
+      const { setupAllInitialConsumers } = await import('./consumer.setup')
+      const { setupErrorConsumers } = await import('./errorConsumer.setup')
+      await setupAllInitialConsumers()
       await setupErrorConsumers()
 
       this.connectionManager.on('error', (err: Error) => {
@@ -122,6 +122,10 @@ class RabbitMQService {
     message: any
   ): void {
     try {
+      if (!this.isReady()) {
+        throw new Error('RabbitMQ is not ready to publish messages.')
+      }
+
       const channel = this.getChannel()
       const content = Buffer.from(JSON.stringify(message))
       channel.publish(exchange, routingKey, content, { persistent: true })
@@ -168,6 +172,10 @@ class RabbitMQService {
       this.connectionManager = null
       logger.info(this.TAG, 'RabbitMQ connection closed.')
     }
+  }
+
+  public isReady (): boolean {
+    return this.isInitialized && !!this.channel && !!this.connectionManager
   }
 }
 

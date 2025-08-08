@@ -1,11 +1,13 @@
 import express, { Request, Response, Router, NextFunction } from 'express'
-import orderRouter from './order.router'
 import { BaseResponse } from '../../types/global'
+import orderRouter from './order.router'
 import authRouter from './auth.router'
+import userRouter from './user.router'
 
 const router = Router()
 
 router.use('/auth', authRouter)
+router.use('users', userRouter)
 router.use('/orders', orderRouter)
 router.use(
   '/img',
