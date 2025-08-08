@@ -11,4 +11,27 @@ export const UserIdSchema = z.object({
   })
 })
 
+export const UpdateUserSchema = z.object({
+  userName: z
+    .string()
+    .min(3, { message: 'Username must be at least 3 characters' })
+    .optional(),
+  displayName: z
+    .string()
+    .min(1, { message: 'DisplayName must be at least 1 characters' })
+    .optional(),
+  userStatus: z.coerce.boolean().optional(),
+  userRole: z
+    .enum([
+      'ADMIN',
+      'USER',
+      'HEAD_PHARMACIST',
+      'PHARMACIST',
+      'ASSISTANT',
+      'SUPER'
+    ])
+    .optional()
+}).strict()
+
 export type UserIdRequestBody = z.infer<typeof UserIdSchema>
+export type UpdateRequestBody = z.infer<typeof UpdateUserSchema>

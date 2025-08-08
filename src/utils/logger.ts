@@ -12,24 +12,26 @@ const PROJECT_NAME = (() => {
 })()
 
 const BRIGHT = '\x1b[1m'
+
 const colors = {
   reset: '\x1b[0m',
   bright: BRIGHT,
   fg: {
     black: '\x1b[30m',
     white: BRIGHT + '\x1b[37m',
-    red: BRIGHT + '\x1b[31m',
-    green: BRIGHT + '\x1b[32m',
-    yellow: BRIGHT + '\x1b[33m',
-    blue: BRIGHT + '\x1b[34m',
-    magenta: BRIGHT + '\x1b[35m',
-    cyan: BRIGHT + '\x1b[36m'
+    red: BRIGHT + '\x1b[38;5;202m',
+    green: BRIGHT + '\x1b[38;5;150m',
+    yellow: BRIGHT + '\x1b[38;5;220m',
+    blue: BRIGHT + '\x1b[38;5;147m',
+    magenta: BRIGHT + '\x1b[38;5;183m',
+    cyan: BRIGHT + '\x1b[38;5;147m',
+    orange: BRIGHT + '\x1b[38;5;209m'
   },
   bg: {
-    red: '\x1b[41m',
-    green: '\x1b[42m',
-    yellow: '\x1b[43m',
-    blue: '\x1b[44m'
+    red: '\x1b[48;5;202m',
+    green: '\x1b[48;5;42m',
+    yellow: '\x1b[48;5;220m',
+    blue: '\x1b[48;5;26m'
   }
 }
 
@@ -38,7 +40,8 @@ const TAG_COLOR_PALETTE = [
   colors.fg.magenta,
   colors.fg.blue,
   colors.fg.yellow,
-  colors.fg.green
+  colors.fg.green,
+  colors.fg.orange
 ]
 
 const PREDEFINED_TAG_COLORS = new Map<string, string>([
@@ -49,7 +52,8 @@ const PREDEFINED_TAG_COLORS = new Map<string, string>([
   ['PLCService', colors.fg.cyan],
   ['PickupService', colors.fg.blue],
   ['OrderService', colors.fg.yellow],
-  ['Bootstrap', colors.fg.green]
+  ['Bootstrap', colors.fg.green],
+  ['ErrorConsumer', colors.fg.orange]
 ])
 
 export enum LogLevel {
@@ -121,7 +125,7 @@ class Logger {
       const levelIndicator = `${levelBgColor}${levelFgColor}${colors.bright} ${levelChar} ${colors.reset}`
 
       const plainPrefix = `${timestamp} ${pidTid} ${plainTag} ${projectNameColumn} ${levelIndicator} `
-      const indentation = ' '.repeat(stripAnsi(plainPrefix).length + 1)
+      const indentation = ' '.repeat(stripAnsi(plainPrefix).length + 2)
 
       const coloredTag = `${getColorForTag(tag)}${plainTag}${colors.reset}`
       const coloredPrefix = `${timestamp} ${pidTid} ${coloredTag} ${projectNameColumn} ${levelIndicator} `
@@ -156,14 +160,29 @@ class Logger {
           if (arg instanceof Error && arg.stack) {
             const stack = arg.stack
               .split('\n')
-              .slice(1)
+              .slice(0)
               .map(
                 line => `${indentation}${colors.fg.red}${line}${colors.reset}`
               )
               .join('\n')
             console.log(stack)
           } else {
-            console.log(indentation, arg)
+            const objectString = JSON.stringify(arg, null, 2)
+            const indentedObjectString = objectString
+              .split('\n')
+              .map(line => `${indentation}${line}`)
+              .join('\n')
+
+            let coloredIndentedString = indentedObjectString
+            if (level === LogLevel.WARN) {
+              coloredIndentedString =
+                colors.fg.yellow + indentedObjectString + colors.reset
+            } else if (level === LogLevel.ERROR) {
+              coloredIndentedString =
+                colors.fg.red + indentedObjectString + colors.reset
+            }
+
+            console.log(coloredIndentedString)
           }
         })
       }

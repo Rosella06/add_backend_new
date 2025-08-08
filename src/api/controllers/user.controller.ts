@@ -1,9 +1,18 @@
 import { NextFunction, Request, Response } from 'express'
-import { deleteUserService, editUserService, getUserByIdService, getUserService } from '../services/user.service'
 import {
+  deleteUserService,
+  editUserService,
+  getUserByIdService,
+  getUserService
+} from '../services/user.service'
+import {
+  UpdateRequestBody,
+  UpdateUserSchema,
   UserIdRequestBody,
   UserIdSchema
 } from '../../validators/user.validator'
+import { HttpError } from '../../types/global'
+import { deleteImagePath } from '../../utils/upload'
 
 export const getUser = async (
   req: Request,
@@ -29,9 +38,9 @@ export const getUserById = async (
   next: NextFunction
 ) => {
   try {
-    const validatedBody: UserIdRequestBody = UserIdSchema.parse(req.params)
+    const validatedParams: UserIdRequestBody = UserIdSchema.parse(req.params)
 
-    const result = await getUserByIdService(validatedBody.id)
+    const result = await getUserByIdService(validatedParams.id)
 
     res.status(200).json({
       message: 'Success',
@@ -49,9 +58,35 @@ export const editUser = async (
   next: NextFunction
 ) => {
   try {
-    const validatedBody: UserIdRequestBody = UserIdSchema.parse(req.params)
+    const validatedParams = UserIdSchema.safeParse(req.params)
+    const validatedBody = UpdateUserSchema.safeParse(req.body)
 
-    const result = await editUserService()
+    if (!validatedParams.success) {
+      if (req.file) {
+        await deleteImagePath('users', req.file.filename)
+      }
+      throw new HttpError(400, 'Invalid user ID format.')
+    }
+
+    if (!validatedBody.success) {
+      if (req.file) {
+        await deleteImagePath('users', req.file.filename)
+      }
+      return next(
+        new HttpError(
+          400,
+          'Validation failed. Please check your input.',
+          validatedBody.error.flatten()
+        )
+      )
+    }
+
+    const userId = validatedParams.data.id
+    const body = validatedBody.data
+
+    const imageFile = req.file
+
+    const result = await editUserService(userId, body, imageFile)
 
     res.status(200).json({
       message: 'Success',
@@ -69,9 +104,9 @@ export const deleteUser = async (
   next: NextFunction
 ) => {
   try {
-    const validatedBody: UserIdRequestBody = UserIdSchema.parse(req.params)
+    const validatedParams: UserIdRequestBody = UserIdSchema.parse(req.params)
 
-    const result = await deleteUserService(validatedBody.id)
+    const result = await deleteUserService(validatedParams.id)
 
     res.status(200).json({
       message: 'Success',

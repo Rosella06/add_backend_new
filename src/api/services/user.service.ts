@@ -1,8 +1,8 @@
-import { v4 as uuidv4 } from 'uuid'
 import prisma from '../../config/prisma'
 import { Users } from '@prisma/client'
 import { HttpError } from '../../types/global'
 import { deleteImagePath } from '../../utils/upload'
+import { UpdateRequestBody } from '../../validators/user.validator'
 
 export const getUserService = async (): Promise<Users[]> => {
   try {
@@ -49,13 +49,44 @@ export const getUserByIdService = async (userId: string): Promise<Users> => {
   }
 }
 
-export const editUserService = async (): Promise<Users> => {
+export const editUserService = async (
+  userId: string,
+  userData: UpdateRequestBody,
+  imageFile?: Express.Multer.File
+): Promise<Users> => {
   try {
-    const result = await prisma.users.findFirst({
-
+    const findUser = await prisma.users.findUnique({
+      where: { id: userId }
     })
-    return result as unknown as Users
+
+    if (!findUser) {
+      if (imageFile) {
+        await deleteImagePath('users', imageFile.filename)
+      }
+      throw new HttpError(404, 'User not found')
+    }
+
+    const oldImageFilename = findUser.userImage
+    if (imageFile && oldImageFilename) {
+      await deleteImagePath('users', oldImageFilename)
+    }
+
+    const dataToUpdate = {
+      ...userData,
+      ...(imageFile && { userImage: imageFile.filename })
+    }
+
+    const result = await prisma.users.update({
+      where: { id: userId },
+      data: dataToUpdate
+    })
+
+    return result
   } catch (error) {
+    if (imageFile) {
+      await deleteImagePath('users', imageFile.filename)
+    }
+
     throw error
   }
 }
