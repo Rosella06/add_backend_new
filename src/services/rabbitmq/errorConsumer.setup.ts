@@ -4,7 +4,6 @@ import prisma from '../../config/prisma'
 import { logger } from '../../utils/logger'
 
 const TAG = 'ErrorConsumer'
-const ERROR_DLX = 'error_dlx'
 
 export async function setupErrorConsumers () {
   const channel = rabbitService.getChannel()

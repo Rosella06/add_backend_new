@@ -94,7 +94,7 @@ const stripAnsi = (str: string) =>
 class Logger {
   private pid: string = process.pid.toString()
   private projectName: string = PROJECT_NAME
-  private maxTagLength: number = 15
+  private maxTagLength: number = 20
 
   private formatTag (tag: string): string {
     const fullTag = `[${tag}]`
