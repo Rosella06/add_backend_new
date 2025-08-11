@@ -10,7 +10,7 @@ function pad (num: number, size: number): string {
   return s
 }
 
-async function getNextRunningNumber (machineId: string): Promise<number> {
+export async function getNextRunningNumber (machineId: string): Promise<number> {
   return prisma.$transaction(async tx => {
     const machine = await tx.machines.findUnique({
       where: { id: machineId },
