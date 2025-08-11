@@ -39,7 +39,7 @@ class RabbitMQService {
       this.retryAttempts = 0
       this.isWaitingForLongRetry = false
 
-      onRabbitMQConnect()
+      await this.onRabbitMQConnect()
 
       this.connectionManager.on('error', (err: Error) => {
         logger.error(this.TAG, `RabbitMQ connection error: ${err.message}`)
@@ -174,28 +174,25 @@ class RabbitMQService {
   public isReady (): boolean {
     return this.isInitialized && !!this.channel && !!this.connectionManager
   }
+
+  private async onRabbitMQConnect () {
+    logger.info(this.TAG, 'Connection successful. Setting up consumers...')
+    try {
+      const { setupAllInitialConsumers } = await import('./consumer.setup')
+      const { setupErrorConsumers } = await import('./errorConsumer.setup')
+
+      await setupAllInitialConsumers()
+      await setupErrorConsumers()
+
+      logger.info(this.TAG, 'All consumers are set up and running.')
+    } catch (error) {
+      logger.error(
+        'RabbitMQ_Manager',
+        'Failed to set up consumers after connection.',
+        error
+      )
+    }
+  }
 }
 
 export const rabbitService = new RabbitMQService()
-
-async function onRabbitMQConnect () {
-  logger.info(
-    'RabbitMQ_Manager',
-    'Connection successful. Setting up consumers...'
-  )
-  try {
-    const { setupAllInitialConsumers } = await import('./consumer.setup')
-    const { setupErrorConsumers } = await import('./errorConsumer.setup')
-
-    await setupAllInitialConsumers()
-    await setupErrorConsumers()
-
-    logger.info('RabbitMQ_Manager', 'All consumers are set up and running.')
-  } catch (error) {
-    logger.error(
-      'RabbitMQ_Manager',
-      'Failed to set up consumers after connection.',
-      error
-    )
-  }
-}
