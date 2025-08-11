@@ -7,20 +7,23 @@ const ipAddressRegex =
 
 const customIdRegex = new RegExp(`^MID-${uuidV4Regex.source}$`, 'i')
 
-export const CreateMachineSchema = z.object({
-  // id: z
-  //   .string()
-  //   .regex(customIdRegex, { message: 'Invalid Machine ID format.' }),
-  machineName: z.string().min(1, { message: 'Machine name is required.' }),
-  ipAddress: z.string().regex(ipAddressRegex, {
-    message:
-      'Invalid IPv4 address format (e.g., 192.168.1.1 or ::ffff:192.168.1.1)'
-  })
+export const MachineSchema = z.object({
+  machineName: z
+    .string()
+    .min(1, { message: 'Machine name is required.' })
+    .optional(),
+  ipAddress: z
+    .string()
+    .regex(ipAddressRegex, {
+      message:
+        'Invalid IPv4 address format (e.g., 192.168.1.1 or ::ffff:192.168.1.1)'
+    })
+    .optional()
 })
 
-export const deleteMachineSchema = z.object({
+export const paramsIdMachineSchema = z.object({
   id: z.string().regex(customIdRegex, { message: 'Invalid Machine ID format.' })
 })
 
-export type CreateMachineRequestBody = z.infer<typeof CreateMachineSchema>
-export type deleteMachineRequestParams = z.infer<typeof deleteMachineSchema>
+export type MachineRequestBody = z.infer<typeof MachineSchema>
+export type paramsIdMachineRequestParams = z.infer<typeof paramsIdMachineSchema>

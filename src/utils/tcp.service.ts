@@ -85,6 +85,21 @@ class TcpService {
   public getSocketByMachineId (machineId: string): Socket | undefined {
     return this.connectedSockets.get(machineId)
   }
+
+  public disconnectByMachineId (
+    machineId: string,
+    reason: string = 'Configuration updated'
+  ): void {
+    const socket = this.connectedSockets.get(machineId)
+    if (socket) {
+      logger.warn(
+        this.TAG,
+        `[TCP] Forcibly disconnecting machine ${machineId}. Reason: ${reason}`
+      )
+      socket.end()
+      this.connectedSockets.delete(machineId)
+    }
+  }
 }
 
 export const tcpService = new TcpService()

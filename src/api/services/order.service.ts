@@ -196,11 +196,11 @@ export async function updateOrderSlot (
 
 export async function deleteAllOrder (machineId: string): Promise<string> {
   const mainQueueName = `orders_queue_${machineId}`
-  const waitQueueName = `error_queue_${machineId}`
+  const errorQueueName = `error_queue_${machineId}`
   const retryQueueName = `retry_queue_${machineId}`
 
   await rabbitService.deleteQueue(mainQueueName)
-  await rabbitService.deleteQueue(waitQueueName)
+  await rabbitService.deleteQueue(errorQueueName)
   await rabbitService.deleteQueue(retryQueueName)
 
   const prescriptionsToClear = await prisma.prescription.findMany({
