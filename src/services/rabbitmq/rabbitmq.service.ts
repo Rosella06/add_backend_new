@@ -39,10 +39,7 @@ class RabbitMQService {
       this.retryAttempts = 0
       this.isWaitingForLongRetry = false
 
-      const { setupAllInitialConsumers } = await import('./consumer.setup')
-      const { setupErrorConsumers } = await import('./errorConsumer.setup')
-      await setupAllInitialConsumers()
-      await setupErrorConsumers()
+      onRabbitMQConnect()
 
       this.connectionManager.on('error', (err: Error) => {
         logger.error(this.TAG, `RabbitMQ connection error: ${err.message}`)
@@ -141,7 +138,7 @@ class RabbitMQService {
   public async deleteQueue (queueName: string): Promise<void> {
     try {
       const channel = this.getChannel()
-      await channel.purgeQueue(queueName)
+      await channel.deleteQueue(queueName)
       logger.info(
         this.TAG,
         `[RabbitMQ] Successfully deleted queue: ${queueName}`
@@ -180,3 +177,25 @@ class RabbitMQService {
 }
 
 export const rabbitService = new RabbitMQService()
+
+async function onRabbitMQConnect () {
+  logger.info(
+    'RabbitMQ_Manager',
+    'Connection successful. Setting up consumers...'
+  )
+  try {
+    const { setupAllInitialConsumers } = await import('./consumer.setup')
+    const { setupErrorConsumers } = await import('./errorConsumer.setup')
+
+    await setupAllInitialConsumers()
+    await setupErrorConsumers()
+
+    logger.info('RabbitMQ_Manager', 'All consumers are set up and running.')
+  } catch (error) {
+    logger.error(
+      'RabbitMQ_Manager',
+      'Failed to set up consumers after connection.',
+      error
+    )
+  }
+}

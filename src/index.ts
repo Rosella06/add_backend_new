@@ -7,6 +7,7 @@ import { socketService } from './utils/socket.service'
 import { tcpService } from './utils/tcp.service'
 import { rabbitService } from './services/rabbitmq/rabbitmq.service'
 import { logger } from './utils/logger'
+import prisma from './config/prisma'
 
 function getProjectName (): string {
   try {
@@ -26,21 +27,32 @@ const startServer = async () => {
   logger.separator(`STARTED (PID: ${process.pid}) for package ${PROJECT_NAME}`)
 
   try {
-    await tcpService.initialize(config.tcpPort)
-    socketService.initialize(server)
+    await prisma.$connect()
+    logger.info(TAG, 'Database connection successful.')
 
-    server.listen(config.port, () => {
-      logger.info(TAG, `Server is running on http://localhost:${config.port}`)
-      logger.info(TAG, 'API, TCP, and Socket.IO are ready.')
+    await tcpService.initialize(config.tcpPort)
+
+    await new Promise<void>(resolve => {
+      server.listen(config.port, () => {
+        logger.info(
+          TAG,
+          `HTTP Server is running on http://localhost:${config.port}`
+        )
+        socketService.initialize(server)
+        resolve()
+      })
     })
 
     await rabbitService.init()
-  } catch (error) {
-    logger.error(
-      TAG,
-      'Failed to start critical services (e.g., TCP Server):',
-      error
-    )
+
+    logger.info(TAG, 'All services are ready.')
+  } catch (error: any) {
+    if (error.code && error.code.startsWith('P')) {
+      logger.error(TAG, '❌ Failed to connect to the database:', error)
+    } else {
+      logger.error(TAG, '❌ Failed to start critical services:', error)
+    }
+
     logger.separator(
       `ENDED ABNORMALLY (PID: ${process.pid}) for package ${PROJECT_NAME}`
     )
@@ -65,6 +77,7 @@ const gracefulShutdown = async (signal: string) => {
     logger.info(TAG, 'HTTP server closed.')
 
     await rabbitService.close()
+    await prisma.$disconnect()
 
     logger.separator(
       `ENDED GRACEFULLY (PID: ${process.pid}) for package ${PROJECT_NAME}`

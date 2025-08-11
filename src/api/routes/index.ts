@@ -3,11 +3,13 @@ import { BaseResponse } from '../../types/global'
 import orderRouter from './order.router'
 import authRouter from './auth.router'
 import userRouter from './user.router'
+import machineRouter from './machine.router'
 
 const router = Router()
 
 router.use('/auth', authRouter)
 router.use('/users', userRouter)
+router.use('/machines', machineRouter)
 router.use('/orders', orderRouter)
 router.use(
   '/img',

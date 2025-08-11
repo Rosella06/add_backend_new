@@ -10,8 +10,6 @@ import { hashPassword, hashPasswordCompare } from '../../utils/hash'
 import { v4 as uuidv4 } from 'uuid'
 import { getDateFormat } from '../../utils/date.format'
 
-const TAG = 'AUTH SERVICE'
-
 export const userLoginWithQrCodeService = async (
   pinCode: string
 ): Promise<Users> => {

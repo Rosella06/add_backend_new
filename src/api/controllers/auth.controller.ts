@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from 'express'
-import { Users } from '@prisma/client'
 import {
   LoginSchema,
   GenerateQrCodeSchema,
