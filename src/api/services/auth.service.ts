@@ -197,7 +197,7 @@ export const createUserService = async (
     })
     return result
   } catch (error) {
-    if (imageFile.filename) {
+    if (imageFile) {
       await deleteImagePath('users', imageFile.filename)
     }
     throw error

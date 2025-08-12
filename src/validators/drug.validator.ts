@@ -10,4 +10,17 @@ export const DrugIdParamsSchema = z.object({
     .regex(customDrugIdRegex, { message: 'Invalid Drug ID format.' })
 })
 
+export const CreateDrugSchema = z.object({
+  drugCode: z.string(),
+  drugName: z.string().min(1, { message: 'Drug name cannot be empty.' }),
+})
+
+export const EditDrugSchema = z.object({
+  drugCode: z.string().optional(),
+  drugName: z.string().min(1, { message: 'Drug name cannot be empty.' }).optional(),
+  drugStatus: z.coerce.boolean().optional()
+})
+
 export type DrugIdParamsRequestBody = z.infer<typeof DrugIdParamsSchema>
+export type CreateDrugRequestBody = z.infer<typeof CreateDrugSchema>
+export type EditDrugRequestBody = z.infer<typeof EditDrugSchema>

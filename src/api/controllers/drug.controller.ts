@@ -1,6 +1,20 @@
 import { NextFunction, Request, Response } from 'express'
-import { deleteDrugService, getDrugByIdService, getDrugService } from '../services/drug.service'
-import { DrugIdParamsRequestBody, DrugIdParamsSchema } from '../../validators/drug.validator'
+import {
+  createDrugService,
+  deleteDrugService,
+  editDrugService,
+  getDrugByIdService,
+  getDrugService
+} from '../services/drug.service'
+import {
+  CreateDrugRequestBody,
+  CreateDrugSchema,
+  DrugIdParamsRequestBody,
+  DrugIdParamsSchema,
+  EditDrugRequestBody,
+  EditDrugSchema
+} from '../../validators/drug.validator'
+import { deleteImagePath } from '../../utils/upload'
 
 export const getDrug = async (
   req: Request,
@@ -26,7 +40,9 @@ export const getDrugById = async (
   next: NextFunction
 ) => {
   try {
-    const validatedParams: DrugIdParamsRequestBody = DrugIdParamsSchema.parse(req.params)
+    const validatedParams: DrugIdParamsRequestBody = DrugIdParamsSchema.parse(
+      req.params
+    )
 
     const result = await getDrugByIdService(validatedParams.id)
 
@@ -46,6 +62,10 @@ export const createDrug = async (
   next: NextFunction
 ) => {
   try {
+    const validatedBody: CreateDrugRequestBody = CreateDrugSchema.parse(
+      req.body
+    )
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -55,12 +75,16 @@ export const createDrug = async (
 
     const imageFile = req.file
 
+    const result = await createDrugService(validatedBody, imageFile)
+
     res.status(201).json({
       message: 'Success',
       success: true,
-      data: null
+      data: result
     })
   } catch (error) {
+    if (req.file) await deleteImagePath('drugs', req.file.filename)
+
     next(error)
   }
 }
@@ -71,21 +95,29 @@ export const editDrug = async (
   next: NextFunction
 ) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'Drug image file is required.'
-      })
-    }
+    const validatedBody: EditDrugRequestBody = EditDrugSchema.parse(
+      req.body
+    )
+    const validatedParams: DrugIdParamsRequestBody = DrugIdParamsSchema.parse(
+      req.params
+    )
 
     const imageFile = req.file
 
-    res.status(200).json({
+    const result = await editDrugService(
+      validatedParams.id,
+      validatedBody,
+      imageFile
+    )
+
+    res.status(201).json({
       message: 'Success',
       success: true,
-      data: null
+      data: result
     })
   } catch (error) {
+    if (req.file) await deleteImagePath('drugs', req.file.filename)
+
     next(error)
   }
 }
@@ -96,7 +128,9 @@ export const deleteDrug = async (
   next: NextFunction
 ) => {
   try {
-    const validatedParams: DrugIdParamsRequestBody = DrugIdParamsSchema.parse(req.params)
+    const validatedParams: DrugIdParamsRequestBody = DrugIdParamsSchema.parse(
+      req.params
+    )
 
     const result = await deleteDrugService(validatedParams.id)
 

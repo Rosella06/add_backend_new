@@ -94,6 +94,8 @@ export const editUser = async (
       data: result
     })
   } catch (error) {
+    if (req.file) await deleteImagePath('users', req.file.filename)
+
     next(error)
   }
 }

@@ -148,9 +148,9 @@ export const createUser = async (
       data: result
     })
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      if (req.file) await deleteImagePath('users', req.file.filename)
+    if (req.file) await deleteImagePath('users', req.file.filename)
 
+    if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
         message: 'Invalid request body',
