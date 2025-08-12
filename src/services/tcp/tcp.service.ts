@@ -63,9 +63,9 @@ class TcpService {
             )
             socket.on('end', async () => {
               logger.info(this.TAG, `[TCP] Machine ${machine.id} disconnected.`)
-              systemEventEmitter.emit(SystemEvents.MACHINE_OFFLINE, {
-                machineId: machine.id
-              })
+              // systemEventEmitter.emit(SystemEvents.MACHINE_OFFLINE, {
+              //   machineId: machine.id
+              // })
               this.connectedSockets.delete(machine.id)
               await prisma.machines.update({
                 where: { id: machine.id },

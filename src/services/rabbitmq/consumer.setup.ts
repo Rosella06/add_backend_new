@@ -119,37 +119,37 @@ export async function setupConsumerForSingleMachine (machineId: string) {
   )
 }
 
-export async function teardownConsumerForSingleMachine (
-  machineId: string
-): Promise<void> {
-  if (activeConsumers.has(machineId)) {
-    const channel = rabbitService.getChannel()
-    const consumerTag = activeConsumers.get(machineId)!
-    try {
-      logger.warn(
-        TAG,
-        `Tearing down consumer for machine ${machineId} (tag: ${consumerTag})...`
-      )
-      await channel.cancel(consumerTag)
-      activeConsumers.delete(machineId)
-      logger.info(
-        TAG,
-        `Successfully tore down consumer for machine ${machineId}.`
-      )
-    } catch (error) {
-      logger.error(
-        TAG,
-        `Failed to tear down consumer for machine ${machineId}.`,
-        error
-      )
-    }
-  } else {
-    logger.warn(
-      TAG,
-      `Attempted to tear down a non-existent consumer for machine ${machineId}.`
-    )
-  }
-}
+// export async function teardownConsumerForSingleMachine (
+//   machineId: string
+// ): Promise<void> {
+//   if (activeConsumers.has(machineId)) {
+//     const channel = rabbitService.getChannel()
+//     const consumerTag = activeConsumers.get(machineId)!
+//     try {
+//       logger.warn(
+//         TAG,
+//         `Tearing down consumer for machine ${machineId} (tag: ${consumerTag})...`
+//       )
+//       await channel.cancel(consumerTag)
+//       activeConsumers.delete(machineId)
+//       logger.info(
+//         TAG,
+//         `Successfully tore down consumer for machine ${machineId}.`
+//       )
+//     } catch (error) {
+//       logger.error(
+//         TAG,
+//         `Failed to tear down consumer for machine ${machineId}.`,
+//         error
+//       )
+//     }
+//   } else {
+//     logger.warn(
+//       TAG,
+//       `Attempted to tear down a non-existent consumer for machine ${machineId}.`
+//     )
+//   }
+// }
 
 export async function setupAllInitialConsumers () {
   logger.info(TAG, 'Setting up initial consumers for all online machines...')

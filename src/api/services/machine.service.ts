@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { getDateFormat } from '../../utils/date.format'
 import {
   setupConsumerForSingleMachine,
-  teardownConsumerForSingleMachine
+  // teardownConsumerForSingleMachine
 } from '../../services/rabbitmq/consumer.setup'
 import { rabbitService } from '../../services/rabbitmq/rabbitmq.service'
 import { MachineRequestBody } from '../../validators/machine.validator'
@@ -121,7 +121,7 @@ export const deleteMachineService = async (
       throw new HttpError(404, `Machine ${machineId} not found.`)
     }
 
-    await teardownConsumerForSingleMachine(machineId)
+    // await teardownConsumerForSingleMachine(machineId)
     tcpService.disconnectByMachineId(machineId, 'Machine is being deleted.')
 
     const result = await prisma.machines.delete({

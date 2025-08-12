@@ -10,7 +10,7 @@ import { logger } from './utils/logger'
 import prisma from './config/prisma'
 import {
   setupConsumerForSingleMachine,
-  teardownConsumerForSingleMachine
+  // teardownConsumerForSingleMachine
 } from './services/rabbitmq/consumer.setup'
 import systemEventEmitter, { SystemEvents } from './utils/system.events'
 
@@ -48,24 +48,24 @@ const setupDynamicConsumerManager = () => {
     }
   )
 
-  systemEventEmitter.on(
-    SystemEvents.MACHINE_OFFLINE,
-    async (data: { machineId: string }) => {
-      logger.info(
-        TAG,
-        `Received MACHINE_OFFLINE event for ${data.machineId}. Tearing down consumer...`
-      )
-      try {
-        await teardownConsumerForSingleMachine(data.machineId)
-      } catch (error) {
-        logger.error(
-          TAG,
-          `Failed to dynamically tear down consumer for ${data.machineId}.`,
-          error
-        )
-      }
-    }
-  )
+  // systemEventEmitter.on(
+  //   SystemEvents.MACHINE_OFFLINE,
+  //   async (data: { machineId: string }) => {
+  //     logger.info(
+  //       TAG,
+  //       `Received MACHINE_OFFLINE event for ${data.machineId}. Tearing down consumer...`
+  //     )
+  //     try {
+  //       await teardownConsumerForSingleMachine(data.machineId)
+  //     } catch (error) {
+  //       logger.error(
+  //         TAG,
+  //         `Failed to dynamically tear down consumer for ${data.machineId}.`,
+  //         error
+  //       )
+  //     }
+  //   }
+  // )
 }
 
 const startServer = async () => {
