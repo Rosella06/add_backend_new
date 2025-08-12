@@ -3,7 +3,10 @@ import prisma from '../../config/prisma'
 import { HttpError } from '../../types/global'
 import { v4 as uuidv4 } from 'uuid'
 import { getDateFormat } from '../../utils/date.format'
-import { setupConsumerForSingleMachine } from '../../services/rabbitmq/consumer.setup'
+import {
+  setupConsumerForSingleMachine,
+  teardownConsumerForSingleMachine
+} from '../../services/rabbitmq/consumer.setup'
 import { rabbitService } from '../../services/rabbitmq/rabbitmq.service'
 import { MachineRequestBody } from '../../validators/machine.validator'
 import { tcpService } from '../../services/tcp/tcp.service'
@@ -100,6 +103,7 @@ export const deleteMachineService = async (
       throw new HttpError(404, `Machine ${machineId} not found.`)
     }
 
+    await teardownConsumerForSingleMachine(machineId)
     tcpService.disconnectByMachineId(machineId, 'Machine is being deleted.')
 
     const result = await prisma.machines.delete({
