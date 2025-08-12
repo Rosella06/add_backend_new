@@ -1,5 +1,11 @@
 import { NextFunction, Request, Response } from 'express'
-import { createMachineService, deleteMachineService, editMachineService, getMachineService } from '../services/machine.service'
+import {
+  createMachineService,
+  deleteMachineService,
+  editMachineService,
+  getMachineByIdService,
+  getMachineService
+} from '../services/machine.service'
 import {
   MachineRequestBody,
   MachineSchema,
@@ -26,21 +32,46 @@ export const getMachine = async (
   }
 }
 
+export const getMachineById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const validatedParams: paramsIdMachineRequestParams =
+      paramsIdMachineSchema.parse(req.params)
+
+    const result = await getMachineByIdService(validatedParams.id)
+
+    res.status(200).json({
+      success: true,
+      message: `A list of machines.`,
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const createMachine = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const validatedBody: MachineRequestBody = MachineSchema.parse(
-      req.body
-    )
+    const validatedBody: MachineRequestBody = MachineSchema.parse(req.body)
 
     if (!validatedBody.machineName || !validatedBody.ipAddress) {
-      throw new HttpError(409, `Machine name and ip address should not be empty.`)
+      throw new HttpError(
+        409,
+        `Machine name and ip address should not be empty.`
+      )
     }
 
-    const result = await createMachineService(validatedBody.machineName, validatedBody.ipAddress)
+    const result = await createMachineService(
+      validatedBody.machineName,
+      validatedBody.ipAddress
+    )
 
     res.status(201).json({
       success: true,
@@ -58,12 +89,9 @@ export const editMachine = async (
   next: NextFunction
 ) => {
   try {
-    const validatedBody: MachineRequestBody = MachineSchema.parse(
-      req.body
-    )
-    const validatedParams: paramsIdMachineRequestParams = paramsIdMachineSchema.parse(
-      req.params
-    )
+    const validatedBody: MachineRequestBody = MachineSchema.parse(req.body)
+    const validatedParams: paramsIdMachineRequestParams =
+      paramsIdMachineSchema.parse(req.params)
 
     const result = await editMachineService(validatedParams.id, validatedBody)
 
@@ -83,9 +111,8 @@ export const deleteMachine = async (
   next: NextFunction
 ) => {
   try {
-    const validatedParams: paramsIdMachineRequestParams = paramsIdMachineSchema.parse(
-      req.params
-    )
+    const validatedParams: paramsIdMachineRequestParams =
+      paramsIdMachineSchema.parse(req.params)
 
     const result = await deleteMachineService(validatedParams.id)
 

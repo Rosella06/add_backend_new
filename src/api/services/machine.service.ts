@@ -21,6 +21,24 @@ export const getMachineService = async (): Promise<Machines[]> => {
   }
 }
 
+export const getMachineByIdService = async (
+  machineId: string
+): Promise<Machines> => {
+  try {
+    const findMachines = await prisma.machines.findFirst({
+      where: { id: machineId }
+    })
+
+    if (!findMachines) {
+      throw new HttpError(409, `Machine ${machineId} not found.`)
+    }
+
+    return findMachines
+  } catch (error) {
+    throw error
+  }
+}
+
 export const createMachineService = async (
   machineName: string,
   ipAddress: string
