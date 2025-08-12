@@ -76,6 +76,7 @@ export async function setupErrorConsumers () {
   if (successCount > 0) {
     logger.info(TAG, `Successfully set up ${successCount} error consumers.`)
   }
+
   if (successCount < allMachines.length) {
     logger.error(
       TAG,
