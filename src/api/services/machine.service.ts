@@ -30,7 +30,7 @@ export const getMachineByIdService = async (
     })
 
     if (!findMachines) {
-      throw new HttpError(409, `Machine ${machineId} not found.`)
+      throw new HttpError(404, `Machine ${machineId} not found.`)
     }
 
     return findMachines
