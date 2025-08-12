@@ -4,10 +4,15 @@ import path from 'path'
 import { app } from './app'
 import { config } from './config'
 import { socketService } from './utils/socket.service'
-import { tcpService } from './utils/tcp.service'
+import { tcpService } from './services/tcp/tcp.service'
 import { rabbitService } from './services/rabbitmq/rabbitmq.service'
 import { logger } from './utils/logger'
 import prisma from './config/prisma'
+import {
+  setupConsumerForSingleMachine,
+  teardownConsumerForSingleMachine
+} from './services/rabbitmq/consumer.setup'
+import systemEventEmitter, { SystemEvents } from './utils/system.events'
 
 function getProjectName (): string {
   try {
@@ -22,6 +27,46 @@ function getProjectName (): string {
 const PROJECT_NAME = getProjectName()
 const TAG = 'SERVER'
 const server = http.createServer(app)
+
+const setupDynamicConsumerManager = () => {
+  systemEventEmitter.on(
+    SystemEvents.MACHINE_ONLINE,
+    async (data: { machineId: string }) => {
+      logger.info(
+        TAG,
+        `Received MACHINE_ONLINE event for ${data.machineId}. Setting up consumer...`
+      )
+      try {
+        await setupConsumerForSingleMachine(data.machineId)
+      } catch (error) {
+        logger.error(
+          TAG,
+          `Failed to dynamically set up consumer for ${data.machineId}.`,
+          error
+        )
+      }
+    }
+  )
+
+  systemEventEmitter.on(
+    SystemEvents.MACHINE_OFFLINE,
+    async (data: { machineId: string }) => {
+      logger.info(
+        TAG,
+        `Received MACHINE_OFFLINE event for ${data.machineId}. Tearing down consumer...`
+      )
+      try {
+        await teardownConsumerForSingleMachine(data.machineId)
+      } catch (error) {
+        logger.error(
+          TAG,
+          `Failed to dynamically tear down consumer for ${data.machineId}.`,
+          error
+        )
+      }
+    }
+  )
+}
 
 const startServer = async () => {
   logger.separator(`STARTED (PID: ${process.pid}) for package ${PROJECT_NAME}`)
@@ -44,6 +89,8 @@ const startServer = async () => {
     })
 
     await rabbitService.init()
+
+    setupDynamicConsumerManager()
 
     logger.info(TAG, 'All services are ready.')
   } catch (error: any) {

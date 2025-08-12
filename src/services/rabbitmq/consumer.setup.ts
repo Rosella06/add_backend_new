@@ -1,6 +1,6 @@
 import prisma from '../../config/prisma'
 import { socketService } from '../../utils/socket.service'
-import { tcpService } from '../../utils/tcp.service'
+import { tcpService } from '../tcp/tcp.service'
 import { plcService } from '../machine/plc.service'
 import {
   updateOrderSlot,
@@ -17,6 +17,8 @@ const MAIN_EXCHANGE = 'drug_dispenser_exchange'
 const RETRY_DLX = 'retry_dlx'
 const ERROR_DLX = 'error_dlx'
 const RETRY_DELAY = 1500
+
+const activeConsumers = new Map<string, string>()
 
 export async function setupConsumerForSingleMachine (machineId: string) {
   const channel = rabbitService.getChannel()
@@ -67,12 +69,10 @@ export async function setupConsumerForSingleMachine (machineId: string) {
 
         if (dispensed) {
           await updateOrderStatus(order.orderId, 'dispensed')
-          socketService
-            .getIO()
-            .emit('drug_dispensed', {
-              orderId: order.orderId,
-              slot: slotIdentifier
-            })
+          socketService.getIO().emit('drug_dispensed', {
+            orderId: order.orderId,
+            slot: slotIdentifier
+          })
           channel.ack(msg)
           await delay(500)
         } else {
@@ -117,6 +117,38 @@ export async function setupConsumerForSingleMachine (machineId: string) {
     },
     { noAck: false }
   )
+}
+
+export async function teardownConsumerForSingleMachine (
+  machineId: string
+): Promise<void> {
+  if (activeConsumers.has(machineId)) {
+    const channel = rabbitService.getChannel()
+    const consumerTag = activeConsumers.get(machineId)!
+    try {
+      logger.warn(
+        TAG,
+        `Tearing down consumer for machine ${machineId} (tag: ${consumerTag})...`
+      )
+      await channel.cancel(consumerTag)
+      activeConsumers.delete(machineId)
+      logger.info(
+        TAG,
+        `Successfully tore down consumer for machine ${machineId}.`
+      )
+    } catch (error) {
+      logger.error(
+        TAG,
+        `Failed to tear down consumer for machine ${machineId}.`,
+        error
+      )
+    }
+  } else {
+    logger.warn(
+      TAG,
+      `Attempted to tear down a non-existent consumer for machine ${machineId}.`
+    )
+  }
 }
 
 export async function setupAllInitialConsumers () {

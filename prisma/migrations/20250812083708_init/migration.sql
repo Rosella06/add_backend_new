@@ -34,6 +34,7 @@ CREATE TABLE "Inventory" (
 -- CreateTable
 CREATE TABLE "Prescription" (
     "id" TEXT NOT NULL,
+    "userId" VARCHAR(200),
     "prescriptionNo" VARCHAR(200) NOT NULL,
     "prescriptionDate" VARCHAR(200) NOT NULL,
     "hn" VARCHAR(20) NOT NULL,
@@ -101,6 +102,20 @@ CREATE TABLE "Users" (
     CONSTRAINT "Users_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "SystemErrors" (
+    "id" TEXT NOT NULL,
+    "queueName" TEXT NOT NULL,
+    "errorMessage" TEXT NOT NULL,
+    "stackTrace" TEXT,
+    "payload" JSONB NOT NULL,
+    "resolved" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SystemErrors_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Drugs_drugCode_key" ON "Drugs"("drugCode");
 
@@ -124,6 +139,9 @@ CREATE UNIQUE INDEX "Users_userName_key" ON "Users"("userName");
 
 -- AddForeignKey
 ALTER TABLE "Inventory" ADD CONSTRAINT "Inventory_drugId_fkey" FOREIGN KEY ("drugId") REFERENCES "Drugs"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Prescription" ADD CONSTRAINT "Prescription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Orders" ADD CONSTRAINT "Orders_prescriptionId_fkey" FOREIGN KEY ("prescriptionId") REFERENCES "Prescription"("id") ON DELETE CASCADE ON UPDATE CASCADE;

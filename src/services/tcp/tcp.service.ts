@@ -1,6 +1,7 @@
 import net, { Socket } from 'net'
-import prisma from '../config/prisma'
-import { logger } from '../utils/logger'
+import prisma from '../../config/prisma'
+import { logger } from '../../utils/logger'
+import systemEventEmitter, { SystemEvents } from '../../utils/system.events'
 
 class TcpService {
   private server: net.Server | null = null
@@ -31,6 +32,16 @@ class TcpService {
               `[TCP] IP ${clientIp} matched with Machine ID: ${machine.id}`
             )
 
+            if (machine.status === 'offline') {
+              logger.info(
+                this.TAG,
+                `Machine ${machine.id} has come online. Emitting event.`
+              )
+              systemEventEmitter.emit(SystemEvents.MACHINE_ONLINE, {
+                machineId: machine.id
+              })
+            }
+
             if (this.connectedSockets.has(machine.id)) {
               logger.warn(
                 this.TAG,
@@ -52,6 +63,9 @@ class TcpService {
             )
             socket.on('end', async () => {
               logger.info(this.TAG, `[TCP] Machine ${machine.id} disconnected.`)
+              systemEventEmitter.emit(SystemEvents.MACHINE_OFFLINE, {
+                machineId: machine.id
+              })
               this.connectedSockets.delete(machine.id)
               await prisma.machines.update({
                 where: { id: machine.id },

@@ -6,7 +6,7 @@ import { getDateFormat } from '../../utils/date.format'
 import { setupConsumerForSingleMachine } from '../../services/rabbitmq/consumer.setup'
 import { rabbitService } from '../../services/rabbitmq/rabbitmq.service'
 import { MachineRequestBody } from '../../validators/machine.validator'
-import { tcpService } from '../../utils/tcp.service'
+import { tcpService } from '../../services/tcp/tcp.service'
 
 export const getMachineService = async (): Promise<Machines[]> => {
   try {

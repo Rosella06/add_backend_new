@@ -9,7 +9,7 @@ import {
 } from '../services/plc.service'
 import { HttpError } from '../../types/global'
 import { PlcCommand } from '../../types/plc'
-import { tcpService } from '../../utils/tcp.service'
+import { tcpService } from '../../services/tcp/tcp.service'
 
 export const plcSendCommand = async (
   req: Request,
