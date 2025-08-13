@@ -21,6 +21,10 @@ export const plcSendCommand = async (
       req.body
     )
 
+    if (!validatedBody.machineId) {
+      throw new HttpError(409, 'Machine id field is missing.')
+    }
+
     const socket = tcpService.getSocketByMachineId(validatedBody.machineId)
     if (!socket || socket.destroyed) throw new Error('Socket not connected')
 
@@ -44,8 +48,8 @@ export const plcSendCommandM = async (
   try {
     let validatedBody: PlcCommandRequestBody = PlcCommandSchema.parse(req.body)
 
-    if (!validatedBody.command) {
-      throw new HttpError(409, 'Command field is missing.')
+    if (!validatedBody.command || !validatedBody.machineId) {
+      throw new HttpError(409, 'Command or machine id field is missing.')
     }
 
     const commandValue = validatedBody.command.trim().toUpperCase()

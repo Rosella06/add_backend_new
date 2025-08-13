@@ -18,6 +18,10 @@ export const plcSendCommandService = async (
 ): Promise<PlcResponse> => {
   const { floor, position, machineId } = plcData
 
+  if (!machineId) {
+    throw new HttpError(409, 'Machine id field is missing.')
+  }
+
   try {
     const running = await getNextRunningNumber(machineId)
     const checkResult = await checkMachineStatus(socket, plcData, running)
@@ -40,6 +44,10 @@ export const plcSendCommandMService = async (
   originalCommand: string
 ): Promise<PlcResponse> => {
   const { command, floor, position, qty, machineId } = plcData
+
+  if (!machineId) {
+    throw new HttpError(409, 'Machine id field is missing.')
+  }
 
   try {
     const running = await getNextRunningNumber(machineId)
