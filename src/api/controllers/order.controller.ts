@@ -6,7 +6,9 @@ import { AuthHeaderSchema } from '../../validators/token.validator'
 import { verify } from 'jsonwebtoken'
 import { UserJwtPayload } from '../../types/order'
 import {
+  DispenseOrderIdParamsSchema,
   DispenseOrderRequestBody,
+  DispenseOrderRequestParams,
   DispenseOrderSchema,
   PickupNextDrugRequestBody,
   PickupNextDrugSchema
@@ -46,6 +48,8 @@ export const dispenseNewPrescription = async (
     const validatedBody: DispenseOrderRequestBody = DispenseOrderSchema.parse(
       req.body
     )
+    const validatedParams: DispenseOrderRequestParams =
+      DispenseOrderIdParamsSchema.parse(req.params)
     const authHeader = req.headers.authorization
     const token = AuthHeaderSchema.parse(authHeader)
     const decoded = verify(
@@ -53,12 +57,12 @@ export const dispenseNewPrescription = async (
       String(process.env.JWT_SECRET)
     ) as UserJwtPayload
 
-    if (!validatedBody.rfid || !validatedBody.machineId) {
+    if (!validatedParams.rfid || !validatedBody.machineId) {
       throw new HttpError(400, 'RFID and Machine ID are required.')
     }
 
     const prescription = await orderService.createPrescriptionFromPharmacy(
-      validatedBody.rfid,
+      validatedParams.rfid,
       validatedBody.machineId,
       decoded.id
     )
@@ -83,8 +87,7 @@ export const pickupNextDrug = async (
       req.params
     )
     const orderToPickup = await orderService.findNextOrderToPickup(
-      validatedBody.orderId,
-      validatedBody.drugId
+      validatedBody.orderId
     )
 
     if (!orderToPickup) {
@@ -132,7 +135,9 @@ export const deleteAllOrderAndQueue = async (
       throw new HttpError(404, `Machine id is missing.`)
     }
 
-    const deleteResult = await orderService.deleteAllOrder(validatedBody.machineId)
+    const deleteResult = await orderService.deleteAllOrder(
+      validatedBody.machineId
+    )
 
     res.status(200).json({
       success: true,
