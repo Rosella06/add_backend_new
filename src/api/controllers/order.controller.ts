@@ -13,6 +13,7 @@ import {
   PickupNextDrugRequestBody,
   PickupNextDrugSchema
 } from '../../validators/order.validator'
+import { socketService } from '../../utils/socket.service'
 
 export const getOrderDispense = async (
   req: Request,
@@ -109,6 +110,11 @@ export const pickupNextDrug = async (
     const slotAvailable = slot === 'M01' ? 'right' : 'left'
 
     await orderService.updateOrderStatus(id, 'pickup')
+    socketService.getIO().emit('drug_dispensed', {
+      orderId: id,
+      data: null,
+      message: 'Update order to pickup.'
+    })
     await pickupService.initiatePickup(id, machineId, slotAvailable)
 
     res.status(200).json({

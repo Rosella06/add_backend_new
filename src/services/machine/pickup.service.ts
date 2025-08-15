@@ -35,6 +35,11 @@ class PickupService {
     const socket = tcpService.getSocketByMachineId(machineId)
     if (!socket) {
       await updateOrderStatus(orderId, 'dispensed')
+      socketService.getIO().emit('drug_dispensed', {
+        orderId: orderId,
+        data: null,
+        message: 'Update order to dispensed.'
+      })
       throw new HttpError(503, `Machine ${machineId} is not connected.`)
     }
 
@@ -50,6 +55,11 @@ class PickupService {
     } catch (error) {
       this.busySlots.delete(slotIdentifier)
       await updateOrderStatus(orderId, 'dispensed')
+      socketService.getIO().emit('drug_dispensed', {
+        orderId: orderId,
+        data: null,
+        message: 'Update order to pickup.'
+      })
       logger.error(TAG, `Error initiating pickup for ${orderId}:`, error)
       throw error
     }
@@ -113,7 +123,11 @@ class PickupService {
 
           await updateOrderStatus(orderId, 'complete')
           await plcService.turnOffLight(socket, machineId, slot)
-          socketService.getIO().emit('pickup_complete', { orderId })
+          socketService.getIO().emit('drug_dispensed', {
+            orderId: orderId,
+            data: null,
+            message: 'Update order to complete.'
+          })
 
           logger.info(
             TAG,

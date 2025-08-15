@@ -64,6 +64,13 @@ export async function setupConsumerForSingleMachine (machineId: string) {
         await updateOrderStatus(order.orderId, 'pending')
         const slotIdentifier = slot === 'right' ? 'M01' : 'M02'
         await updateOrderSlot(order.orderId, slotIdentifier)
+        socketService.getIO().emit('drug_dispensed', {
+          orderId: order.orderId,
+          data: {
+            slot: slotIdentifier
+          },
+          message: 'Update order to pending.'
+        })
 
         const dispensed = await plcService.dispenseDrug(socket, order, slot)
 
@@ -71,7 +78,10 @@ export async function setupConsumerForSingleMachine (machineId: string) {
           await updateOrderStatus(order.orderId, 'dispensed')
           socketService.getIO().emit('drug_dispensed', {
             orderId: order.orderId,
-            slot: slotIdentifier
+            data: {
+              slot: slotIdentifier
+            },
+            message: 'Update order to dispensed.'
           })
           channel.ack(msg)
           await delay(500)
@@ -112,6 +122,11 @@ export async function setupConsumerForSingleMachine (machineId: string) {
             persistent: true
           })
           channel.ack(msg)
+          socketService.getIO().emit('drug_dispensed', {
+            orderId: order.orderId,
+            data: null,
+            message: 'Update order to error.'
+          })
         }
       }
     },
