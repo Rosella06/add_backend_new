@@ -16,6 +16,7 @@ export async function getOrderDispenseService (
     where: { userId },
     include: {
       orders: {
+        include: { drug: true },
         orderBy: [{ floor: 'asc' }, { position: 'asc' }]
       }
     },
@@ -114,6 +115,7 @@ export async function createPrescriptionFromPharmacy (
 
     const createdOrders = await tx.orders.findMany({
       where: { prescriptionId: newPrescription.id },
+      include: { drug: true },
       orderBy: [{ floor: 'asc' }, { position: 'asc' }]
     })
 
