@@ -88,7 +88,8 @@ export const pickupNextDrug = async (
       req.params
     )
     const orderToPickup = await orderService.findNextOrderToPickup(
-      validatedBody.orderId
+      validatedBody.presciptionNo,
+      validatedBody.drugCode
     )
 
     if (!orderToPickup) {
@@ -103,7 +104,7 @@ export const pickupNextDrug = async (
     if (!machineId || !slot) {
       throw new HttpError(
         500,
-        `Order ${validatedBody.orderId} is missing machineId or slot information.`
+        `Order for prescription and drug ${validatedBody.presciptionNo}/${validatedBody.drugCode} is missing machineId or slot information.`
       )
     }
 
@@ -116,6 +117,8 @@ export const pickupNextDrug = async (
       message: 'Update order to pickup.'
     })
     await pickupService.initiatePickup(id, machineId, slotAvailable)
+
+    await orderService.updatePresciptionComplete(validatedBody.presciptionNo)
 
     res.status(200).json({
       success: true,

@@ -21,9 +21,14 @@ export const PickupNextDrugSchema = z.object({
   //   message:
   //     "Invalid Order ID format. Must be in 'OID-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' format."
   // }),
-  orderId: z.string().min(1, { message: 'Drug ID cannot be empty' })
+  presciptionNo: z
+    .string()
+    .min(1, { message: 'Presciption No cannot be empty' }),
+  drugCode: z.string().min(1, { message: 'Drug Code cannot be empty' })
 })
 
 export type DispenseOrderRequestBody = z.infer<typeof DispenseOrderSchema>
-export type DispenseOrderRequestParams = z.infer<typeof DispenseOrderIdParamsSchema>
+export type DispenseOrderRequestParams = z.infer<
+  typeof DispenseOrderIdParamsSchema
+>
 export type PickupNextDrugRequestBody = z.infer<typeof PickupNextDrugSchema>

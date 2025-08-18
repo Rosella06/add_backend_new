@@ -67,16 +67,16 @@ model Orders {
   floor          Int
   position       Int
   slot           String?      @db.VarChar(3)
-  prescriptionId String
-  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
-  drugId         String
-  drug           Drugs        @relation(fields: [drugId], references: [id])
+  prescriptionNo String
+  prescription   Prescription @relation(fields: [prescriptionNo], references: [prescriptionNo], onDelete: Cascade)
+  drugCode         String
+  drug           Drugs        @relation(fields: [drugCode], references: [drugCode])
   machineId      String
   machine        Machines     @relation(fields: [machineId], references: [id])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  @@unique([prescriptionId, drugId])
+  @@unique([prescriptionNo, drugCode])
 }
 
 model Machines {

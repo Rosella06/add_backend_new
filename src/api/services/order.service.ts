@@ -5,6 +5,7 @@ import { HttpError } from '../../types/global'
 import { Orders, Prescription } from '@prisma/client'
 import { logger } from '../../utils/logger'
 import { v4 as uuidv4 } from 'uuid'
+import { getDateFormat } from '../../utils/date.format'
 
 const EXCHANGE_NAME = 'drug_dispenser_exchange'
 const TAG = 'ORDER-SERVICE'
@@ -96,9 +97,9 @@ export async function createPrescriptionFromPharmacy (
           unitCode: item.f_orderunitcode,
           floor: parseInt(item.f_binlocation.substring(0, 1)),
           position: parseInt(item.f_binlocation.substring(1)),
-          prescriptionId: newPrescription.id,
+          prescriptionNo: newPrescription.prescriptionNo,
+          drugCode: drug.drugCode,
           machineId: machineId,
-          drugId: drug.id,
           status: 'ready'
         }
       })
@@ -114,7 +115,7 @@ export async function createPrescriptionFromPharmacy (
     await tx.orders.createMany({ data: sortedOrdersData })
 
     const createdOrders = await tx.orders.findMany({
-      where: { prescriptionId: newPrescription.id },
+      where: { prescriptionNo: newPrescription.prescriptionNo },
       include: { drug: true },
       orderBy: [{ floor: 'asc' }, { position: 'asc' }]
     })
@@ -164,10 +165,14 @@ export async function createPrescriptionFromPharmacy (
   return finalOrder
 }
 
-export async function findNextOrderToPickup (orderId: string) {
+export async function findNextOrderToPickup (
+  presciptionNo: string,
+  drugCode: string
+) {
   return prisma.orders.findFirst({
     where: {
-      id: orderId,
+      prescriptionNo: presciptionNo,
+      drugCode: drugCode,
       status: { in: ['dispensed', 'error'] }
     },
     orderBy: { createdAt: 'asc' },
@@ -182,6 +187,34 @@ export async function updateOrderStatus (
   return prisma.orders.update({
     where: { id: orderId },
     data: { status: status }
+  })
+}
+
+export async function updatePresciptionComplete (
+  prescriptionNo: string
+): Promise<Prescription | null> {
+  const relatedOrders = await prisma.orders.findMany({
+    where: { prescriptionNo },
+    select: { status: true }
+  })
+
+  const allCompletedOrErrored = relatedOrders.every(
+    o => o.status === 'complete' || o.status === 'error'
+  )
+
+  if (allCompletedOrErrored) {
+    await prisma.prescription.update({
+      where: { prescriptionNo },
+      data: { status: 'complete', updatedAt: getDateFormat(new Date()) }
+    })
+  }
+
+  return prisma.prescription.findFirst({
+    where: {
+      prescriptionNo,
+      AND: { orders: { every: { status: { contains: 'complete' } } } }
+    },
+    include: { orders: true }
   })
 }
 

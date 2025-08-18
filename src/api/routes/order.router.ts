@@ -11,7 +11,7 @@ const orderRouter = Router()
 
 orderRouter.get('/', verifyToken, getOrderDispense)
 orderRouter.post('/dispense/:rfid', verifyToken, dispenseNewPrescription)
-orderRouter.post('/pickup/:orderId', verifyToken, pickupNextDrug)
+orderRouter.post('/pickup/:presciptionNo/:drugCode', verifyToken, pickupNextDrug)
 orderRouter.delete('/order', verifyToken, deleteAllOrderAndQueue)
 
 export default orderRouter
