@@ -21,7 +21,8 @@ class PickupService {
   public async initiatePickup (
     orderId: string,
     machineId: string,
-    slot: 'left' | 'right'
+    slot: 'left' | 'right',
+    socketId: string
   ): Promise<void> {
     const slotIdentifier = `${machineId}-${slot}`
 
@@ -33,13 +34,18 @@ class PickupService {
     }
 
     const socket = tcpService.getSocketByMachineId(machineId)
+    const socketClient = socketService.getSocketById(socketId)
+
     if (!socket) {
       await updateOrderStatus(orderId, 'dispensed')
-      socketService.getIO().emit('drug_dispensed', {
-        orderId: orderId,
-        data: null,
-        message: 'Update order to dispensed.'
-      })
+
+      if (socketClient) {
+        socketClient.emit('drug_dispensed', {
+          orderId: orderId,
+          data: null,
+          message: 'Update order to dispensed.'
+        })
+      }
       throw new HttpError(503, `Machine ${machineId} is not connected.`)
     }
 
@@ -51,15 +57,18 @@ class PickupService {
 
     try {
       await plcService.openDoor(socket, machineId, slot)
-      this.startPickupCompletionLoop(orderId, machineId, slot)
+      this.startPickupCompletionLoop(orderId, machineId, slot, socketId)
     } catch (error) {
       this.busySlots.delete(slotIdentifier)
       await updateOrderStatus(orderId, 'dispensed')
-      socketService.getIO().emit('drug_dispensed', {
-        orderId: orderId,
-        data: null,
-        message: 'Update order to pickup.'
-      })
+
+      if (socketClient) {
+        socketClient.emit('drug_dispensed', {
+          orderId: orderId,
+          data: null,
+          message: 'Update order to pickup.'
+        })
+      }
       logger.error(TAG, `Error initiating pickup for ${orderId}:`, error)
       throw error
     }
@@ -68,10 +77,12 @@ class PickupService {
   private startPickupCompletionLoop (
     orderId: string,
     machineId: string,
-    slot: 'left' | 'right'
+    slot: 'left' | 'right',
+    socketId: string
   ): void {
     const slotIdentifier = `${machineId}-${slot}`
     const socket = tcpService.getSocketByMachineId(machineId)
+    const socketClient = socketService.getSocketById(socketId)
 
     if (!socket) {
       logger.error(
@@ -123,11 +134,13 @@ class PickupService {
 
           await updateOrderStatus(orderId, 'complete')
           await plcService.turnOffLight(socket, machineId, slot)
-          socketService.getIO().emit('drug_dispensed', {
-            orderId: orderId,
-            data: null,
-            message: 'Update order to complete.'
-          })
+          if (socketClient) {
+            socketClient.emit('drug_dispensed', {
+              orderId: orderId,
+              data: null,
+              message: 'Update order to complete.'
+            })
+          }
 
           logger.info(
             TAG,

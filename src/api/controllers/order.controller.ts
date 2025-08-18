@@ -10,8 +10,10 @@ import {
   DispenseOrderRequestBody,
   DispenseOrderRequestParams,
   DispenseOrderSchema,
+  PickupNextBodyDrugSchema,
   PickupNextDrugRequestBody,
-  PickupNextDrugSchema
+  PickupNextDrugRequestParams,
+  PickupNextParamsDrugSchema
 } from '../../validators/order.validator'
 import { socketService } from '../../utils/socket.service'
 
@@ -65,7 +67,8 @@ export const dispenseNewPrescription = async (
     const prescription = await orderService.createPrescriptionFromPharmacy(
       validatedParams.rfid,
       validatedBody.machineId,
-      decoded.id
+      decoded.id,
+      validatedBody.socketId
     )
 
     res.status(201).json({
@@ -84,12 +87,13 @@ export const pickupNextDrug = async (
   next: NextFunction
 ) => {
   try {
-    const validatedBody: PickupNextDrugRequestBody = PickupNextDrugSchema.parse(
-      req.params
-    )
+    const validatedParams: PickupNextDrugRequestParams =
+      PickupNextParamsDrugSchema.parse(req.params)
+    const validatedBody: PickupNextDrugRequestBody =
+      PickupNextBodyDrugSchema.parse(req.params)
     const orderToPickup = await orderService.findNextOrderToPickup(
-      validatedBody.presciptionNo,
-      validatedBody.drugCode
+      validatedParams.presciptionNo,
+      validatedParams.drugCode
     )
 
     if (!orderToPickup) {
@@ -104,21 +108,30 @@ export const pickupNextDrug = async (
     if (!machineId || !slot) {
       throw new HttpError(
         500,
-        `Order for prescription and drug ${validatedBody.presciptionNo}/${validatedBody.drugCode} is missing machineId or slot information.`
+        `Order for prescription and drug ${validatedParams.presciptionNo}/${validatedParams.drugCode} is missing machineId or slot information.`
       )
     }
 
     const slotAvailable = slot === 'M01' ? 'right' : 'left'
 
     await orderService.updateOrderStatus(id, 'pickup')
-    socketService.getIO().emit('drug_dispensed', {
-      orderId: id,
-      data: null,
-      message: 'Update order to pickup.'
-    })
-    await pickupService.initiatePickup(id, machineId, slotAvailable)
+    const socketClient = socketService.getSocketById(validatedBody.socketId)
 
-    await orderService.updatePresciptionComplete(validatedBody.presciptionNo)
+    if (socketClient) {
+      socketClient.emit('drug_dispensed', {
+        orderId: id,
+        data: null,
+        message: 'Update order to pickup.'
+      })
+    }
+
+    await pickupService.initiatePickup(
+      id,
+      machineId,
+      slotAvailable,
+      validatedBody.socketId
+    )
+    await orderService.updatePresciptionComplete(validatedParams.presciptionNo)
 
     res.status(200).json({
       success: true,

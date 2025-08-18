@@ -32,7 +32,8 @@ export async function getOrderDispenseService (
 export async function createPrescriptionFromPharmacy (
   rfid: string,
   machineId: string,
-  userId: string
+  userId: string,
+  socketId: string
 ): Promise<Prescription> {
   const pharmacyData = await getPharmacyPrescriptionData(rfid)
 
@@ -132,6 +133,7 @@ export async function createPrescriptionFromPharmacy (
       const message = {
         orderId: order.id,
         machineId: order.machineId,
+        socketId: socketId,
         floor: order.floor,
         position: order.position,
         quantity: order.quantity

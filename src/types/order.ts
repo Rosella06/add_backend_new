@@ -36,3 +36,12 @@ export type UserJwtPayload = {
   iat: number
   exp: number
 }
+
+export type SocketPayload = {
+  orderId: string
+  machineId: string
+  socketId: string
+  floor: number
+  position: number
+  quantity: number
+}

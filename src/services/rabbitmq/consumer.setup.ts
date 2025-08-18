@@ -10,6 +10,7 @@ import { rabbitService } from './rabbitmq.service'
 import { logger } from '../../utils/logger'
 import { delay } from '../../utils/system.events'
 import { pickupService } from '../machine/pickup.service'
+import { SocketPayload } from '../../types/order'
 
 const TAG = 'CONSUMER-SETUP'
 
@@ -51,7 +52,7 @@ export async function setupConsumerForSingleMachine (machineId: string) {
     mainQueueName,
     async msg => {
       if (!msg) return
-      const order = JSON.parse(msg.content.toString())
+      const order: SocketPayload = JSON.parse(msg.content.toString())
 
       try {
         const socket = tcpService.getSocketByMachineId(machineId)
@@ -64,25 +65,34 @@ export async function setupConsumerForSingleMachine (machineId: string) {
         await updateOrderStatus(order.orderId, 'pending')
         const slotIdentifier = slot === 'right' ? 'M01' : 'M02'
         await updateOrderSlot(order.orderId, slotIdentifier)
-        socketService.getIO().emit('drug_dispensed', {
-          orderId: order.orderId,
-          data: {
-            slot: slotIdentifier
-          },
-          message: 'Update order to pending.'
-        })
+
+        const socketClient = socketService.getSocketById(order.socketId)
+
+        if (socketClient) {
+          socketClient.emit('drug_dispensed', {
+            orderId: order.orderId,
+            data: {
+              slot: slotIdentifier
+            },
+            message: 'Update order to pending.'
+          })
+        }
 
         const dispensed = await plcService.dispenseDrug(socket, order, slot)
 
         if (dispensed) {
           await updateOrderStatus(order.orderId, 'dispensed')
-          socketService.getIO().emit('drug_dispensed', {
-            orderId: order.orderId,
-            data: {
-              slot: slotIdentifier
-            },
-            message: 'Update order to dispensed.'
-          })
+
+          if (socketClient) {
+            socketClient.emit('drug_dispensed', {
+              orderId: order.orderId,
+              data: {
+                slot: slotIdentifier
+              },
+              message: 'Update order to dispensed.'
+            })
+          }
+
           channel.ack(msg)
           await delay(500)
         } else {
@@ -108,25 +118,35 @@ export async function setupConsumerForSingleMachine (machineId: string) {
             `Consumer-${machineId}`,
             `-> Sending to retry queue for ${RETRY_DELAY / 1000}s.`
           )
+
           channel.publish(RETRY_DLX, machineId, msg.content, {
             persistent: true
           })
+
           channel.ack(msg)
         } else {
+          const order: SocketPayload = JSON.parse(msg.content.toString())
+          const socketClient = socketService.getSocketById(order.socketId)
+
           logger.error(
             `Consumer-${machineId}`,
             `-> Sending to error queue permanently.`
           )
+
           await updateOrderStatus(order.orderId, 'error')
+
           channel.publish(ERROR_DLX, machineId, msg.content, {
             persistent: true
           })
           channel.ack(msg)
-          socketService.getIO().emit('drug_dispensed', {
-            orderId: order.orderId,
-            data: null,
-            message: 'Update order to error.'
-          })
+
+          if (socketClient) {
+            socketClient.emit('drug_dispensed', {
+              orderId: order.orderId,
+              data: null,
+              message: 'Update order to error.'
+            })
+          }
         }
       }
     },
