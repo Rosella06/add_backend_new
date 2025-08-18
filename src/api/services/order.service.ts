@@ -64,8 +64,8 @@ export async function createPrescriptionFromPharmacy (
     const newPrescription = await tx.prescription.create({
       data: {
         id: PID,
-        userId: userId,
         prescriptionNo: pharmacyData.PrescriptionNo,
+        userId: userId,
         prescriptionDate: '20240520',
         hn: pharmacyData.HN,
         an: '7654321',
@@ -172,8 +172,10 @@ export async function findNextOrderToPickup (
   return prisma.orders.findFirst({
     where: {
       prescriptionNo: presciptionNo,
-      drugCode: drugCode,
-      status: { in: ['dispensed', 'error'] }
+      AND: {
+        drugCode: drugCode,
+        AND: { status: { in: ['dispensed', 'error'] } }
+      }
     },
     orderBy: { createdAt: 'asc' },
     include: { drug: true }

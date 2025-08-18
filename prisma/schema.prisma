@@ -69,7 +69,7 @@ model Orders {
   slot           String?      @db.VarChar(3)
   prescriptionNo String
   prescription   Prescription @relation(fields: [prescriptionNo], references: [prescriptionNo], onDelete: Cascade)
-  drugCode         String
+  drugCode       String
   drug           Drugs        @relation(fields: [drugCode], references: [drugCode])
   machineId      String
   machine        Machines     @relation(fields: [machineId], references: [id])
