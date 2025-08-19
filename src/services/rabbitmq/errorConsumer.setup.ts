@@ -2,12 +2,11 @@ import { rabbitService } from './rabbitmq.service'
 import { logFailedJob } from '../error.service'
 import prisma from '../../config/prisma'
 import { logger } from '../../utils/logger'
+import StartupTimer from '../../utils/timer'
 
 const TAG = 'ErrorConsumer'
 
-export async function setupErrorConsumers (
-  logWithTiming: (serviceName: string, message: string) => void
-) {
+export async function setupErrorConsumers (timer: StartupTimer) {
   const channel = rabbitService.getChannel()
   const allMachines = await prisma.machines.findMany({ select: { id: true } })
 
@@ -15,7 +14,7 @@ export async function setupErrorConsumers (
     return
   }
 
-  logWithTiming(
+  timer.check(
     TAG,
     `Setting up error consumers for ${allMachines.length} machines...`
   )
@@ -76,7 +75,7 @@ export async function setupErrorConsumers (
   )
 
   if (successCount > 0) {
-    logWithTiming(TAG, `Successfully set up ${successCount} error consumers.`)
+    timer.check(TAG, `Successfully set up ${successCount} error consumers.`)
   }
 
   if (successCount < allMachines.length) {

@@ -2,16 +2,15 @@ import net, { Socket } from 'net'
 import prisma from '../../config/prisma'
 import { logger } from '../../utils/logger'
 import systemEventEmitter, { SystemEvents } from '../../utils/system.events'
+import StartupTimer from '../../utils/timer'
 
 class TcpService {
   private server: net.Server | null = null
   private connectedSockets: Map<string, Socket> = new Map()
   private TAG = 'TcpService'
 
-  public initialize (
-    port: number,
-    logWithTiming: (serviceName: string, message: string) => void
-  ): Promise<void> {
+  public initialize (port: number, timer: StartupTimer): Promise<void> {
+
     return new Promise((resolve, reject) => {
       if (this.server) return resolve()
 
@@ -92,7 +91,7 @@ class TcpService {
       })
 
       this.server.listen(port, () => {
-        logWithTiming(this.TAG, `TCP Server is listening on port ${port}`)
+        timer.check(this.TAG, `TCP Server is listening on port ${port}`)
         resolve()
       })
       this.server.on('error', err => reject(err))

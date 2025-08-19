@@ -1,13 +1,14 @@
 import { Server as HTTPServer } from 'http'
 import { Server as SocketIOServer, Socket } from 'socket.io'
 import { logger } from './logger'
+import StartupTimer from './timer'
 
 class SocketService {
   private io: SocketIOServer | null = null
   private connectedClients: Map<string, Socket> = new Map()
   private TAG = 'SocketService'
 
-  public initialize (server: HTTPServer, logWithTiming: (serviceName: string, message: string) => void): void {
+  public initialize (server: HTTPServer, timer: StartupTimer): void {
     if (this.io) return
 
     this.io = new SocketIOServer(server, {
@@ -29,7 +30,7 @@ class SocketService {
       })
     })
 
-    logWithTiming(this.TAG, 'Socket.IO Service initialized')
+    timer.check(this.TAG, 'Socket.IO Service initialized')
   }
 
   public getSocketById (socketId: string): Socket | undefined {

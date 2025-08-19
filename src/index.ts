@@ -8,7 +8,7 @@ import { tcpService } from './services/tcp/tcp.service'
 import { rabbitService } from './services/rabbitmq/rabbitmq.service'
 import { logger } from './utils/logger'
 import prisma from './config/prisma'
-import { performance } from 'perf_hooks'
+import StartupTimer from './utils/timer'
 import {
   setupConsumerForSingleMachine
   // teardownConsumerForSingleMachine
@@ -70,44 +70,29 @@ const setupDynamicConsumerManager = () => {
 }
 
 const startServer = async () => {
-  const startTime = performance.now()
-  let lastTime = startTime
-
-  const logWithTiming = (serviceName: string, message: string) => {
-    const now = performance.now()
-    const duration = (now - lastTime).toFixed(2)
-    logger.info(serviceName, `${message} (+${duration}ms)`)
-    lastTime = now
-  }
+  const timer = new StartupTimer()
 
   logger.separator(`STARTED (PID: ${process.pid}) for package ${PROJECT_NAME}`)
 
   try {
     await prisma.$connect()
-    logWithTiming(TAG, 'Database connection successful.')
+    timer.check(TAG, 'Database connection successful.')
 
-    await tcpService.initialize(config.tcpPort, logWithTiming)
+    await tcpService.initialize(config.tcpPort, timer)
 
     await new Promise<void>(resolve => {
       server.listen(config.port, () => {
-        logWithTiming(
-          TAG,
-          `Server is running on http://localhost:${config.port}`
-        )
-        socketService.initialize(server, logWithTiming)
+        timer.check(TAG, `Server is running on http://localhost:${config.port}`)
+        socketService.initialize(server, timer)
         resolve()
       })
     })
 
-    await rabbitService.init(logWithTiming)
+    await rabbitService.init(timer)
 
     setupDynamicConsumerManager()
 
-    const totalTime = (performance.now() - startTime).toFixed(2)
-    logger.info(
-      TAG,
-      `All services are ready. (Total startup time: ${totalTime}ms)`
-    )
+    timer.total(TAG, 'All services are ready.')
   } catch (error: any) {
     if (error.code && error.code.startsWith('P')) {
       logger.error(TAG, '❌ Failed to connect to the database:', error)

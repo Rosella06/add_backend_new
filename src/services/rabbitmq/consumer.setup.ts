@@ -11,6 +11,7 @@ import { logger } from '../../utils/logger'
 import { delay } from '../../utils/system.events'
 import { pickupService } from '../machine/pickup.service'
 import { SocketPayload } from '../../types/order'
+import StartupTimer from '../../utils/timer'
 
 const TAG = 'CONSUMER-SETUP'
 
@@ -184,13 +185,13 @@ export async function setupConsumerForSingleMachine (machineId: string) {
 //   }
 // }
 
-export async function setupAllInitialConsumers (logWithTiming: (serviceName: string, message: string) => void) {
+export async function setupAllInitialConsumers (timer: StartupTimer) {
   const channel = rabbitService.getChannel()
 
   await channel.assertExchange(MAIN_EXCHANGE, 'direct', { durable: true })
   await channel.assertExchange(RETRY_DLX, 'fanout', { durable: true })
   await channel.assertExchange(ERROR_DLX, 'fanout', { durable: true })
-  logWithTiming(TAG, 'RabbitMQ Exchanges are ready.')
+  timer.check(TAG, 'RabbitMQ Exchanges are ready.')
 
   const allMachines = await prisma.machines.findMany({
     where: { status: 'online' }
@@ -218,7 +219,7 @@ export async function setupAllInitialConsumers (logWithTiming: (serviceName: str
   )
 
   if (successCount > 0) {
-    logWithTiming(TAG, `Successfully set up ${successCount} main consumers.`)
+    timer.check(TAG, `Successfully set up ${successCount} main consumers.`)
   }
   if (successCount < allMachines.length) {
     logger.error(
