@@ -8,7 +8,10 @@ class TcpService {
   private connectedSockets: Map<string, Socket> = new Map()
   private TAG = 'TcpService'
 
-  public initialize (port: number): Promise<void> {
+  public initialize (
+    port: number,
+    logWithTiming: (serviceName: string, message: string) => void
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.server) return resolve()
 
@@ -89,7 +92,7 @@ class TcpService {
       })
 
       this.server.listen(port, () => {
-        logger.info(this.TAG, `TCP Server is listening on port ${port}`)
+        logWithTiming(this.TAG, `TCP Server is listening on port ${port}`)
         resolve()
       })
       this.server.on('error', err => reject(err))

@@ -7,7 +7,7 @@ class SocketService {
   private connectedClients: Map<string, Socket> = new Map()
   private TAG = 'SocketService'
 
-  public initialize (server: HTTPServer): void {
+  public initialize (server: HTTPServer, logWithTiming: (serviceName: string, message: string) => void): void {
     if (this.io) return
 
     this.io = new SocketIOServer(server, {
@@ -29,7 +29,7 @@ class SocketService {
       })
     })
 
-    logger.info(this.TAG, 'Socket.IO Service initialized')
+    logWithTiming(this.TAG, 'Socket.IO Service initialized')
   }
 
   public getSocketById (socketId: string): Socket | undefined {

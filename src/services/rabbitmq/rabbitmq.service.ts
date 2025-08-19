@@ -14,13 +14,15 @@ class RabbitMQService {
   private readonly longRetryDelay = 30 * 60 * 1000
   private isWaitingForLongRetry = false
 
-  public async init (): Promise<void> {
+  public async init (
+    logWithTiming: (serviceName: string, message: string) => void
+  ): Promise<void> {
     if (this.isInitialized || this.isConnecting || this.isWaitingForLongRetry) {
       return
     }
 
     this.isConnecting = true
-    logger.info(this.TAG, 'Attempting to connect...')
+    logWithTiming(this.TAG, 'Attempting to connect...')
 
     try {
       const rabbitConfig = config.rabbit
@@ -32,14 +34,14 @@ class RabbitMQService {
       this.isInitialized = true
       this.isConnecting = false
 
-      logger.info(
+      logWithTiming(
         this.TAG,
         'RabbitMQ Service initialized successfully. Resetting all counters.'
       )
       this.retryAttempts = 0
       this.isWaitingForLongRetry = false
 
-      await this.onRabbitMQConnect()
+      await this.onRabbitMQConnect(logWithTiming)
 
       this.connectionManager.on('error', (err: Error) => {
         logger.error(this.TAG, `RabbitMQ connection error: ${err.message}`)
@@ -50,14 +52,17 @@ class RabbitMQService {
           this.TAG,
           'RabbitMQ connection closed! Attempting to re-initialize...'
         )
-        this.handleDisconnection()
+        this.handleDisconnection(logWithTiming)
       })
     } catch (err: any) {
-      this.handleDisconnection(err)
+      this.handleDisconnection(logWithTiming, err)
     }
   }
 
-  private handleDisconnection (error?: any): void {
+  private handleDisconnection (
+    logWithTiming: (serviceName: string, message: string) => void,
+    error?: any
+  ): void {
     if (this.isWaitingForLongRetry) {
       return
     }
@@ -82,7 +87,7 @@ class RabbitMQService {
           this.retryAttempts
         }/${this.maxRetries})`
       )
-      setTimeout(() => this.init(), this.retryDelay)
+      setTimeout(() => this.init(logWithTiming), this.retryDelay)
     } else {
       this.isWaitingForLongRetry = true
       const longDelayMinutes = this.longRetryDelay / (60 * 1000)
@@ -99,7 +104,7 @@ class RabbitMQService {
 
         this.isWaitingForLongRetry = false
         this.retryAttempts = 0
-        this.init()
+        this.init(logWithTiming)
       }, this.longRetryDelay)
       // พิจารณาปิดแอปพลิเคชันในกรณีนี้ เพราะ Service สำคัญไม่สามารถทำงานได้
       // process.exit(1);
@@ -175,16 +180,17 @@ class RabbitMQService {
     return this.isInitialized && !!this.channel && !!this.connectionManager
   }
 
-  private async onRabbitMQConnect () {
-    logger.info(this.TAG, 'Connection successful. Setting up consumers...')
+  private async onRabbitMQConnect (
+    logWithTiming: (serviceName: string, message: string) => void
+  ) {
     try {
       const { setupAllInitialConsumers } = await import('./consumer.setup')
       const { setupErrorConsumers } = await import('./errorConsumer.setup')
 
-      await setupAllInitialConsumers()
-      await setupErrorConsumers()
+      await setupAllInitialConsumers(logWithTiming)
+      await setupErrorConsumers(logWithTiming)
 
-      logger.info(this.TAG, 'All consumers are set up and running.')
+      logWithTiming(this.TAG, 'All consumers are set up and running.')
     } catch (error) {
       logger.error(
         'RabbitMQ_Manager',

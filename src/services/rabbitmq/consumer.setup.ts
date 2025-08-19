@@ -19,8 +19,6 @@ const RETRY_DLX = 'retry_dlx'
 const ERROR_DLX = 'error_dlx'
 const RETRY_DELAY = 1500
 
-const activeConsumers = new Map<string, string>()
-
 export async function setupConsumerForSingleMachine (machineId: string) {
   const channel = rabbitService.getChannel()
 
@@ -186,14 +184,13 @@ export async function setupConsumerForSingleMachine (machineId: string) {
 //   }
 // }
 
-export async function setupAllInitialConsumers () {
-  logger.info(TAG, 'Setting up initial consumers for all online machines...')
+export async function setupAllInitialConsumers (logWithTiming: (serviceName: string, message: string) => void) {
   const channel = rabbitService.getChannel()
 
   await channel.assertExchange(MAIN_EXCHANGE, 'direct', { durable: true })
   await channel.assertExchange(RETRY_DLX, 'fanout', { durable: true })
   await channel.assertExchange(ERROR_DLX, 'fanout', { durable: true })
-  logger.info(TAG, 'RabbitMQ Exchanges are ready.')
+  logWithTiming(TAG, 'RabbitMQ Exchanges are ready.')
 
   const allMachines = await prisma.machines.findMany({
     where: { status: 'online' }
@@ -221,7 +218,7 @@ export async function setupAllInitialConsumers () {
   )
 
   if (successCount > 0) {
-    logger.info(TAG, `Successfully set up ${successCount} main consumers.`)
+    logWithTiming(TAG, `Successfully set up ${successCount} main consumers.`)
   }
   if (successCount < allMachines.length) {
     logger.error(

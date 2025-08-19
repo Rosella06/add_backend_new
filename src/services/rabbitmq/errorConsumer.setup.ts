@@ -5,7 +5,9 @@ import { logger } from '../../utils/logger'
 
 const TAG = 'ErrorConsumer'
 
-export async function setupErrorConsumers () {
+export async function setupErrorConsumers (
+  logWithTiming: (serviceName: string, message: string) => void
+) {
   const channel = rabbitService.getChannel()
   const allMachines = await prisma.machines.findMany({ select: { id: true } })
 
@@ -13,7 +15,7 @@ export async function setupErrorConsumers () {
     return
   }
 
-  logger.info(
+  logWithTiming(
     TAG,
     `Setting up error consumers for ${allMachines.length} machines...`
   )
@@ -74,7 +76,7 @@ export async function setupErrorConsumers () {
   )
 
   if (successCount > 0) {
-    logger.info(TAG, `Successfully set up ${successCount} error consumers.`)
+    logWithTiming(TAG, `Successfully set up ${successCount} error consumers.`)
   }
 
   if (successCount < allMachines.length) {

@@ -8,8 +8,9 @@ import { tcpService } from './services/tcp/tcp.service'
 import { rabbitService } from './services/rabbitmq/rabbitmq.service'
 import { logger } from './utils/logger'
 import prisma from './config/prisma'
+import { performance } from 'perf_hooks'
 import {
-  setupConsumerForSingleMachine,
+  setupConsumerForSingleMachine
   // teardownConsumerForSingleMachine
 } from './services/rabbitmq/consumer.setup'
 import systemEventEmitter, { SystemEvents } from './utils/system.events'
@@ -25,7 +26,7 @@ function getProjectName (): string {
 }
 
 const PROJECT_NAME = getProjectName()
-const TAG = 'SERVER'
+const TAG = 'Bootstrap'
 const server = http.createServer(app)
 
 const setupDynamicConsumerManager = () => {
@@ -69,30 +70,44 @@ const setupDynamicConsumerManager = () => {
 }
 
 const startServer = async () => {
+  const startTime = performance.now()
+  let lastTime = startTime
+
+  const logWithTiming = (serviceName: string, message: string) => {
+    const now = performance.now()
+    const duration = (now - lastTime).toFixed(2)
+    logger.info(serviceName, `${message} (+${duration}ms)`)
+    lastTime = now
+  }
+
   logger.separator(`STARTED (PID: ${process.pid}) for package ${PROJECT_NAME}`)
 
   try {
     await prisma.$connect()
-    logger.info(TAG, 'Database connection successful.')
+    logWithTiming(TAG, 'Database connection successful.')
 
-    await tcpService.initialize(config.tcpPort)
+    await tcpService.initialize(config.tcpPort, logWithTiming)
 
     await new Promise<void>(resolve => {
       server.listen(config.port, () => {
-        logger.info(
+        logWithTiming(
           TAG,
-          `HTTP Server is running on http://localhost:${config.port}`
+          `Server is running on http://localhost:${config.port}`
         )
-        socketService.initialize(server)
+        socketService.initialize(server, logWithTiming)
         resolve()
       })
     })
 
-    await rabbitService.init()
+    await rabbitService.init(logWithTiming)
 
     setupDynamicConsumerManager()
 
-    logger.info(TAG, 'All services are ready.')
+    const totalTime = (performance.now() - startTime).toFixed(2)
+    logger.info(
+      TAG,
+      `All services are ready. (Total startup time: ${totalTime}ms)`
+    )
   } catch (error: any) {
     if (error.code && error.code.startsWith('P')) {
       logger.error(TAG, '❌ Failed to connect to the database:', error)
