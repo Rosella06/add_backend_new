@@ -4,7 +4,7 @@ import { HttpError } from '../../types/global'
 import { v4 as uuidv4 } from 'uuid'
 import { getDateFormat } from '../../utils/date.format'
 import {
-  setupConsumerForSingleMachine,
+  setupConsumerForSingleMachine
   // teardownConsumerForSingleMachine
 } from '../../services/rabbitmq/consumer.setup'
 import { rabbitService } from '../../services/rabbitmq/rabbitmq.service'
@@ -32,6 +32,18 @@ export const getMachineByIdService = async (
     if (!findMachines) {
       throw new HttpError(404, `Machine ${machineId} not found.`)
     }
+
+    return findMachines
+  } catch (error) {
+    throw error
+  }
+}
+
+export const getMachineOnlineService = async (): Promise<Machines[]> => {
+  try {
+    const findMachines = await prisma.machines.findMany({
+      where: { status: 'online' }
+    })
 
     return findMachines
   } catch (error) {

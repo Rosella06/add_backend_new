@@ -90,7 +90,7 @@ export const pickupNextDrug = async (
     const validatedParams: PickupNextDrugRequestParams =
       PickupNextParamsDrugSchema.parse(req.params)
     const validatedBody: PickupNextDrugRequestBody =
-      PickupNextBodyDrugSchema.parse(req.params)
+      PickupNextBodyDrugSchema.parse(req.body)
     const orderToPickup = await orderService.findNextOrderToPickup(
       validatedParams.presciptionNo,
       validatedParams.drugCode

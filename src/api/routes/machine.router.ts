@@ -5,13 +5,15 @@ import {
   deleteMachine,
   editMachine,
   getMachine,
-  getMachineById
+  getMachineById,
+  getMachineOnline
 } from '../controllers/machine.controller'
 
 const machineRouter = Router()
 
 machineRouter.get('/', verifyToken, getMachine)
 machineRouter.get('/:id', verifyToken, getMachineById)
+machineRouter.get('/status/online', verifyToken, getMachineOnline)
 machineRouter.post('/', verifyToken, createMachine)
 machineRouter.patch('/:id', verifyToken, editMachine)
 machineRouter.delete('/:id', verifyToken, deleteMachine)

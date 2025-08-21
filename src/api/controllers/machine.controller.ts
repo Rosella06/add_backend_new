@@ -4,6 +4,7 @@ import {
   deleteMachineService,
   editMachineService,
   getMachineByIdService,
+  getMachineOnlineService,
   getMachineService
 } from '../services/machine.service'
 import {
@@ -42,6 +43,24 @@ export const getMachineById = async (
       paramsIdMachineSchema.parse(req.params)
 
     const result = await getMachineByIdService(validatedParams.id)
+
+    res.status(200).json({
+      success: true,
+      message: `A list of machines.`,
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const getMachineOnline = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const result = await getMachineOnlineService()
 
     res.status(200).json({
       success: true,
