@@ -2,7 +2,7 @@ import prisma from '../../config/prisma'
 import { getPharmacyPrescriptionData } from './pharmacy.service'
 import { rabbitService } from '../../services/rabbitmq/rabbitmq.service'
 import { HttpError } from '../../types/global'
-import { Orders, Prescription } from '@prisma/client'
+import { Machines, Orders, Prescription } from '@prisma/client'
 import { logger } from '../../utils/logger'
 import { v4 as uuidv4 } from 'uuid'
 import { getDateFormat } from '../../utils/date.format'
@@ -27,6 +27,27 @@ export async function getOrderDispenseService (
   })
 
   return results as unknown as Prescription[]
+}
+
+export async function checkMachineOnline (
+  machineId: string
+): Promise<Machines | null> {
+  try {
+    const result = await prisma.machines.findFirst({
+      where: { id: machineId }
+    })
+
+    if (result) {
+      return {
+        ...result,
+        status: result.status?.trim()
+      }
+    }
+
+    return result
+  } catch (error) {
+    throw error
+  }
 }
 
 export async function createPrescriptionFromPharmacy (

@@ -16,6 +16,8 @@ import {
   PickupNextParamsDrugSchema
 } from '../../validators/order.validator'
 import { socketService } from '../../utils/socket.service'
+import { logger } from '../../utils/logger'
+import { Machines } from '@prisma/client'
 
 export const getOrderDispense = async (
   req: Request,
@@ -62,6 +64,17 @@ export const dispenseNewPrescription = async (
 
     if (!validatedParams.rfid || !validatedBody.machineId) {
       throw new HttpError(400, 'RFID and Machine ID are required.')
+    }
+
+    const checkMachineOnline: Machines | null =
+      await orderService.checkMachineOnline(validatedBody.machineId)
+
+    if (!checkMachineOnline) {
+      throw new HttpError(404, `Machine ${validatedBody.machineId} not found.`)
+    }
+
+    if (checkMachineOnline.status === 'offline') {
+      throw new HttpError(409, `Machine ${validatedBody.machineId} is offline.`)
     }
 
     const prescription = await orderService.createPrescriptionFromPharmacy(
