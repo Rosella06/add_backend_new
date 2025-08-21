@@ -4,12 +4,13 @@ import { HttpError } from '../../types/global'
 import { v4 as uuidv4 } from 'uuid'
 import { getDateFormat } from '../../utils/date.format'
 import {
-  setupConsumerForSingleMachine
+  startConsumerForSingleMachine
   // teardownConsumerForSingleMachine
 } from '../../services/rabbitmq/consumer.setup'
 import { rabbitService } from '../../services/rabbitmq/rabbitmq.service'
 import { MachineRequestBody } from '../../validators/machine.validator'
 import { tcpService } from '../../services/tcp/tcp.service'
+import { setupInfraForSingleMachine } from '../../services/rabbitmq/infra.setup'
 
 export const getMachineService = async (): Promise<Machines[]> => {
   try {
@@ -78,7 +79,8 @@ export const createMachineService = async (
       }
     })
 
-    await setupConsumerForSingleMachine(result.id)
+    await setupInfraForSingleMachine(result.id)
+    await startConsumerForSingleMachine(result.id)
 
     return result
   } catch (error) {

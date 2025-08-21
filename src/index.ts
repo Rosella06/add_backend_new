@@ -10,7 +10,7 @@ import { logger } from './utils/logger'
 import prisma from './config/prisma'
 import StartupTimer from './utils/timer'
 import {
-  setupConsumerForSingleMachine
+  startConsumerForSingleMachine
   // teardownConsumerForSingleMachine
 } from './services/rabbitmq/consumer.setup'
 import systemEventEmitter, { SystemEvents } from './utils/system.events'
@@ -38,7 +38,7 @@ const setupDynamicConsumerManager = () => {
         `Received MACHINE_ONLINE event for ${data.machineId}. Setting up consumer...`
       )
       try {
-        await setupConsumerForSingleMachine(data.machineId)
+        await startConsumerForSingleMachine(data.machineId)
       } catch (error) {
         logger.error(
           TAG,

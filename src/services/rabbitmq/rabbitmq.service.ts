@@ -178,10 +178,12 @@ class RabbitMQService {
 
   private async onRabbitMQConnect (timer: StartupTimer) {
     try {
-      const { setupAllInitialConsumers } = await import('./consumer.setup')
+      const { setupAllInitialInfrastructure } = await import('./infra.setup')
+      const { startAllInitialConsumers } = await import('./consumer.setup')
       const { setupErrorConsumers } = await import('./errorConsumer.setup')
 
-      await setupAllInitialConsumers(timer)
+      await setupAllInitialInfrastructure(timer)
+      await startAllInitialConsumers(timer)
       await setupErrorConsumers(timer)
 
       timer.check(this.TAG, 'All consumers are set up and running.')

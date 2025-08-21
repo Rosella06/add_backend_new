@@ -8,7 +8,10 @@ const TAG = 'ErrorConsumer'
 
 export async function setupErrorConsumers (timer: StartupTimer) {
   const channel = rabbitService.getChannel()
-  const allMachines = await prisma.machines.findMany({ select: { id: true } })
+  const allMachines = await prisma.machines.findMany({
+    select: { id: true },
+    where: { status: 'online' }
+  })
 
   if (allMachines.length === 0) {
     return
