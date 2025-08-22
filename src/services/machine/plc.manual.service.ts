@@ -161,7 +161,7 @@ export const checkMachineStatus = async (
     PlcCommandTwo.CheckShelf
   ]) {
     try {
-      const runningCheck = await getMachineRunningCheck(machineId)
+      const runningCheck = await getMachineRunningCheck(machineId!)
       const result = await sendCommandtoCheckMachineStatus(
         cmd,
         runningCheck,
@@ -192,7 +192,7 @@ export const checkMachineStatus = async (
     }
   }
 
-  const message = createPlcCommand(floor, position, qty, mode, running)
+  const message = createPlcCommand(floor!, position!, qty!, mode, running)
   console.log('📤 Final PLC command:', message)
   socket.write(message)
 

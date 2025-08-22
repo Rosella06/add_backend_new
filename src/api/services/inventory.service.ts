@@ -7,7 +7,6 @@ import {
   UpdateStockRequestBody
 } from '../../validators/inventory.validator'
 import { v4 as uuidv4 } from 'uuid'
-import { id } from 'zod/v4/locales/index.cjs'
 import { plcSendCommandMService } from './plc.service'
 import { tcpService } from '../../services/tcp/tcp.service'
 import { logger } from '../../utils/logger'
@@ -18,7 +17,7 @@ const TAG = 'INVENTORY-SERVICE'
 export const getInventoryService = async (): Promise<Inventory[]> => {
   try {
     const result = await prisma.inventory.findMany({
-      include: {drug: true, machine: true}
+      include: { drug: true, machine: true }
     })
 
     return result
@@ -49,7 +48,7 @@ export const createInventoryService = async (
   inventoryData: CreateInventoryRequestBody
 ): Promise<Inventory> => {
   try {
-    const { machineId, floor, position, drugId } = inventoryData
+    const { machineId, floor, position, drugId, expiryDate } = inventoryData
     const currentInventoryCount = await prisma.inventory.count({
       where: {
         machineId: machineId
@@ -98,7 +97,8 @@ export const createInventoryService = async (
     const newInventory = await prisma.inventory.create({
       data: {
         id: UUID,
-        ...inventoryData
+        ...inventoryData,
+        expiryDate: expiryDate ? new Date(expiryDate) : null
       }
     })
 
