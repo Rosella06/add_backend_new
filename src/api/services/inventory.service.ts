@@ -19,6 +19,9 @@ const TAG = 'INVENTORY-SERVICE'
 export const getInventoryService = async (): Promise<Inventory[]> => {
   try {
     const result = await prisma.inventory.findMany({
+      orderBy: {
+        createdAt: 'desc'
+      },
       include: { drug: true, machine: true }
     })
 
