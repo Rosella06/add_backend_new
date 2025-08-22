@@ -3,9 +3,9 @@ module.exports = {
     {
       name: 'add-backend',
       script: 'dist/index.js',
-      interpreter: 'bun',
+      interpreter: 'node',
       exec_mode: 'cluster',
-      instances: '1',
+      instances: 'max',
       autorestart: true,
 
       watch: false,
