@@ -68,12 +68,12 @@ export const editUserService = async (
 
     const oldImageFilename = findUser.userImage
     if (imageFile && oldImageFilename) {
-      await deleteImagePath('users', oldImageFilename)
+      await deleteImagePath('users', oldImageFilename.split('/')[3])
     }
 
     const dataToUpdate = {
       ...userData,
-      ...(imageFile && { userImage: imageFile.filename })
+      ...(imageFile && { userImage:  `/img/users/${imageFile.filename}` })
     }
 
     const result = await prisma.users.update({

@@ -121,7 +121,7 @@ class Logger {
       const timestamp = getTimestamp()
       const pidTid = `${this.pid}-${this.pid}`.padEnd(10, ' ')
       const plainTag = this.formatTag(tag)
-      const projectNameColumn = this.projectName.padEnd(25, ' ')
+      const projectNameColumn = this.projectName.padEnd(13, ' ')
       const levelIndicator = `${levelBgColor}${levelFgColor}${colors.bright} ${levelChar} ${colors.reset}`
 
       const plainPrefix = `${timestamp} ${pidTid} ${plainTag} ${projectNameColumn} ${levelIndicator} `
