@@ -110,7 +110,7 @@ export const editDrug = async (
       imageFile
     )
 
-    res.status(201).json({
+    res.status(200).json({
       message: 'Success',
       success: true,
       data: result

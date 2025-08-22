@@ -12,13 +12,19 @@ export const DrugIdParamsSchema = z.object({
 
 export const CreateDrugSchema = z.object({
   drugCode: z.string(),
-  drugName: z.string().min(1, { message: 'Drug name cannot be empty.' }),
+  drugName: z.string().min(1, { message: 'Drug name cannot be empty.' })
 })
 
 export const EditDrugSchema = z.object({
   drugCode: z.string().optional(),
-  drugName: z.string().min(1, { message: 'Drug name cannot be empty.' }).optional(),
-  drugStatus: z.coerce.boolean().optional()
+  drugName: z
+    .string()
+    .min(1, { message: 'Drug name cannot be empty.' })
+    .optional(),
+  drugStatus: z
+    .string()
+    .transform(val => val === 'true')
+    .optional()
 })
 
 export type DrugIdParamsRequestBody = z.infer<typeof DrugIdParamsSchema>
