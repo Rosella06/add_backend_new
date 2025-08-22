@@ -15,7 +15,6 @@ export const InventoryIdParamsSchema = z.object({
 export const CreateInventorySchema = z.object({
   floor: z.number().min(1).max(14),
   position: z.number().min(1).max(84),
-  quantity: z.number().min(1).max(60),
   min: z.number(),
   max: z.number(),
   expiryDate: z.string(),

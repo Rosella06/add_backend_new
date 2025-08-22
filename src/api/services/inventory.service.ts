@@ -17,7 +17,9 @@ const TAG = 'INVENTORY-SERVICE'
 
 export const getInventoryService = async (): Promise<Inventory[]> => {
   try {
-    const result = await prisma.inventory.findMany()
+    const result = await prisma.inventory.findMany({
+      include: {drug: true, machine: true}
+    })
 
     return result
   } catch (error) {
@@ -47,7 +49,7 @@ export const createInventoryService = async (
   inventoryData: CreateInventoryRequestBody
 ): Promise<Inventory> => {
   try {
-    const { machineId, floor, position, drugId, quantity } = inventoryData
+    const { machineId, floor, position, drugId } = inventoryData
     const currentInventoryCount = await prisma.inventory.count({
       where: {
         machineId: machineId
@@ -107,7 +109,6 @@ export const createInventoryService = async (
         command: 'M32',
         floor,
         position,
-        qty: quantity,
         machineId
       }
 

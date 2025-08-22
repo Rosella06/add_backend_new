@@ -71,11 +71,13 @@ export async function startConsumerForSingleMachine (
           }
         } catch (error) {
           const errorMessage = (error as Error).message
-          logger.error(
-            `Consumer-${machineId}`,
-            `Failed job for order ${order.orderId}`,
-            error
-          )
+          if (process.env.NODE_ENV === 'development') {
+            logger.error(
+              `Consumer-${machineId}`,
+              `Failed job for order ${order.orderId}`,
+              error
+            )
+          }
           if (
             errorMessage.includes('Tray is full') ||
             errorMessage.includes('Socket not connected') ||
@@ -84,10 +86,12 @@ export async function startConsumerForSingleMachine (
             errorMessage.includes('Dispense-failed-non-92') ||
             errorMessage.includes('Dispense process timed out')
           ) {
-            logger.warn(
-              `Consumer-${machineId}`,
-              `-> Sending to retry queue for ${RETRY_DELAY / 1000}s.`
-            )
+            if (process.env.NODE_ENV === 'development') {
+              logger.warn(
+                `Consumer-${machineId}`,
+                `-> Sending to retry queue for ${RETRY_DELAY / 1000}s.`
+              )
+            }
             channel.publish(RETRY_DLX, machineId, msg.content, {
               persistent: true
             })
@@ -128,7 +132,7 @@ export async function startConsumerForSingleMachine (
 }
 
 export async function startAllInitialConsumers (timer?: StartupTimer) {
-  logger.info(TAG, 'Starting initial consumers for all online machines...')
+  // logger.info(TAG, 'Starting initial consumers for all online machines...')
   const onlineMachines = await prisma.machines.findMany({
     where: { status: 'online' }
   })
@@ -152,7 +156,7 @@ export async function startAllInitialConsumers (timer?: StartupTimer) {
     })
   )
   if (successCount > 0) {
-    timer?.check(TAG, `✅ Successfully started ${successCount} main consumers.`)
+    timer?.check(TAG, `Successfully started ${successCount} main consumers.`)
   }
   if (successCount < onlineMachines.length) {
     logger.error(

@@ -31,12 +31,12 @@ export async function setupInfraForSingleMachine (
   await channel.assertQueue(mainQueueName, { durable: true })
   await channel.bindQueue(mainQueueName, MAIN_EXCHANGE, machineId)
 
-  logger.info(TAG, `Infrastructure for machine ${machineId} is ready.`)
+  // logger.info(TAG, `Infrastructure for machine ${machineId} is ready.`)
 }
 
 export async function setupAllInitialInfrastructure (timer?: StartupTimer) {
   const channel = rabbitService.getChannel()
-  logger.info(TAG, 'Setting up RabbitMQ infrastructure for ALL machines...')
+  // logger.info(TAG, 'Setting up RabbitMQ infrastructure for ALL machines...')
 
   await channel.assertExchange(MAIN_EXCHANGE, 'direct', { durable: true })
   await channel.assertExchange(RETRY_DLX, 'direct', { durable: true })
