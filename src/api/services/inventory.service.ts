@@ -10,6 +10,8 @@ import { v4 as uuidv4 } from 'uuid'
 import { plcSendCommandMService } from './plc.service'
 import { tcpService } from '../../services/tcp/tcp.service'
 import { logger } from '../../utils/logger'
+import { createPlcCommand } from '../../services/machine/plc.manual.service'
+import { getNextRunningNumber } from '../../services/machine/plc.service'
 
 const MAX_INVENTORY_SLOTS_PER_MACHINE = 84
 const TAG = 'INVENTORY-SERVICE'
@@ -101,25 +103,6 @@ export const createInventoryService = async (
         expiryDate: expiryDate ? new Date(expiryDate) : null
       }
     })
-
-    const socket = tcpService.getSocketByMachineId(machineId)
-
-    if (socket) {
-      let bodyData = {
-        command: 'M32',
-        floor,
-        position,
-        machineId
-      }
-
-      const sendM32 = await plcSendCommandMService(bodyData, socket, 'M32')
-      logger.debug(TAG, `ส่งคำสั่ง m32 เรียบร้อย: ${sendM32.plcResponse}`)
-
-      bodyData.command = 'M33'
-
-      const sendM33 = await plcSendCommandMService(bodyData, socket, 'M33')
-      logger.debug(TAG, `ส่งคำสั่ง m33 เรียบร้อย: ${sendM33.plcResponse}`)
-    }
 
     return newInventory
   } catch (error) {
@@ -226,7 +209,14 @@ export const UpdateStockService = async (
       throw new HttpError(404, `Inventory with ID ${inventoryId} not found.`)
     }
 
-    const { quantity } = inventoryData
+    const { quantity, machineId, command } = inventoryData
+
+    if (!machineId || !quantity || !command) {
+      throw new HttpError(
+        400,
+        'At least one of machineId, quantity, or command must be provided.'
+      )
+    }
 
     const updatedInventory = await prisma.inventory.update({
       where: { id: inventoryId },
@@ -234,6 +224,23 @@ export const UpdateStockService = async (
         quantity
       }
     })
+
+    const socket = tcpService.getSocketByMachineId(machineId)
+
+    const { floor, position } = existingInventory
+
+    if (socket) {
+      const running = await getNextRunningNumber(machineId)
+      const sendM32 = createPlcCommand(
+        floor,
+        position,
+        quantity,
+        command,
+        running,
+        0
+      )
+      socket.write(sendM32)
+    }
 
     return updatedInventory
   } catch (error) {

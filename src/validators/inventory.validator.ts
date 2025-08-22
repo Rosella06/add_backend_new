@@ -45,7 +45,12 @@ export const EditInventorySchema = z.object({
 })
 
 export const UpdateStockSchema = z.object({
-  quantity: z.number().min(1).max(60).optional()
+  quantity: z.number().min(1).max(60).optional(),
+  machineId: z
+    .string()
+    .regex(customMachineIdRegex, { message: 'Invalid Machine ID format.' })
+    .optional(),
+    command: z.string().optional()
 })
 
 export type InventoryIdParamsRequestBody = z.infer<
