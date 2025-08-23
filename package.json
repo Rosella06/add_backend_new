@@ -28,7 +28,7 @@
     "swagger-ui-express": "^5.0.1",
     "uuid": "^11.1.0",
     "yaml": "^2.8.1",
-    "zod": "^4.0.17"
+    "zod": "^4.1.0"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.7",
