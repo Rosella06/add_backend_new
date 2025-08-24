@@ -146,9 +146,9 @@ export const deleteMachineService = async (
     const errorQueueName = `error_queue_${machineId}`
     const retryQueueName = `retry_queue_${machineId}`
 
-    await rabbitService.deleteQueue(mainQueueName)
-    await rabbitService.deleteQueue(errorQueueName)
-    await rabbitService.deleteQueue(retryQueueName)
+    await rabbitService.deleteQueueFromMachine(mainQueueName)
+    await rabbitService.deleteQueueFromMachine(errorQueueName)
+    await rabbitService.deleteQueueFromMachine(retryQueueName)
 
     return result
   } catch (error) {

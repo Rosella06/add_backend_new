@@ -11,6 +11,7 @@ export const getUserService = async (): Promise<Users[]> => {
         id: true,
         userName: true,
         displayName: true,
+        pinCode: true,
         userImage: true,
         userRole: true,
         userStatus: true,
