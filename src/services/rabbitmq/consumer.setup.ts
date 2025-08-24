@@ -1,5 +1,5 @@
 import prisma from '../../config/prisma'
-import { socketService } from '../../utils/socket.service'
+import { socketService } from '../socket/socket.service'
 import { tcpService } from '../tcp/tcp.service'
 import { plcService } from '../machine/plc.service'
 import {

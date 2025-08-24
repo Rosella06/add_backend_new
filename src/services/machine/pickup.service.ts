@@ -2,7 +2,7 @@ import { plcService } from './plc.service'
 import { updateOrderStatus } from '../../api/services/order.service'
 import { HttpError } from '../../types/global'
 import { tcpService } from '../tcp/tcp.service'
-import { socketService } from '../../utils/socket.service'
+import { socketService } from '../socket/socket.service'
 import systemEventEmitter, { SystemEvents } from '../../utils/system.events'
 import { logger } from '../../utils/logger'
 

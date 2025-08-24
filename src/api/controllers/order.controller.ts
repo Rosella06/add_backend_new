@@ -15,7 +15,7 @@ import {
   PickupNextDrugRequestParams,
   PickupNextParamsDrugSchema
 } from '../../validators/order.validator'
-import { socketService } from '../../utils/socket.service'
+import { socketService } from '../../services/socket/socket.service'
 import { logger } from '../../utils/logger'
 import { Machines } from '@prisma/client'
 

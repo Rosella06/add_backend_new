@@ -1,7 +1,7 @@
 import { Server as HTTPServer } from 'http'
 import { Server as SocketIOServer, Socket } from 'socket.io'
-import { logger } from './logger'
-import StartupTimer from './timer'
+import { logger } from '../../utils/logger'
+import StartupTimer from '../../utils/timer'
 
 class SocketService {
   private io: SocketIOServer | null = null
@@ -12,7 +12,7 @@ class SocketService {
     if (this.io) return
 
     this.io = new SocketIOServer(server, {
-      cors: { origin: '*', methods: ['GET', 'POST'] }
+      cors: { origin: process.env.FRONTENT_URL, methods: ['GET', 'POST'] }
     })
 
     this.io.on('connection', (socket: Socket) => {
