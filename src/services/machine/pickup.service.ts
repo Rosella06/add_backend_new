@@ -82,7 +82,6 @@ class PickupService {
   ): void {
     const slotIdentifier = `${machineId}-${slot}`
     const socket = tcpService.getSocketByMachineId(machineId)
-    const socketClient = socketService.getSocketById(socketId)
 
     if (!socket) {
       logger.error(
@@ -93,21 +92,9 @@ class PickupService {
       return
     }
 
-    const startTime = Date.now()
     const intervalId = setInterval(async () => {
       if (!this.busySlots.has(slotIdentifier)) {
         clearInterval(intervalId)
-        return
-      }
-
-      if (Date.now() - startTime > PICKUP_TIMEOUT) {
-        clearInterval(intervalId)
-        this.busySlots.delete(slotIdentifier)
-        logger.error(TAG, `Timeout for order ${orderId}.`)
-        socketService.getIO().emit('pickup_error', {
-          orderId,
-          message: 'Timeout: การรับยาไม่เสร็จสิ้นใน 3 นาที'
-        })
         return
       }
 
@@ -134,11 +121,13 @@ class PickupService {
 
           await updateOrderStatus(orderId, 'complete')
           await plcService.turnOffLight(socket, machineId, slot)
+
+          const socketClient = socketService.getSocketById(socketId)
           if (socketClient) {
             socketClient.emit('drug_dispensed', {
               orderId: orderId,
-              data: null,
-              message: 'Update order to complete.'
+              data: { status: 'complete' },
+              message: 'Pickup complete.'
             })
           }
 
